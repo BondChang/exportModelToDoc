@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+        id="exportModelToDoc"
+        name="exportModelToDoc"
+        version="1.0"
+        provider-name="No Magic"
+        class="exportmodeltodoc.ActionTypesExample">
+
+   
+
+    <runtime>
+       <library name="lib/fileattachments_api.jar">
+          <export
+                name="*">
+          </export>
+       </library>
+       <library name="lib/spire.doc-4.10.9.jar">
+          <export
+                name="*">
+          </export>
+       </library>
+       <library name="lib/fileattachments.jar">
+          <export
+                name="*">
+          </export>
+       </library>
+       <library name="lib/aspose-words-18.10.jar">
+          <export
+                name="*">
+          </export>
+       </library>
+        <library name="library.jar">
+           <export
+                 name="*">
+           </export>
+        </library>
+    </runtime>
+</plugin>

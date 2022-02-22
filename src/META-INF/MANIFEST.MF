@@ -1,0 +1,91 @@
+Manifest-Version: 1.0
+Main-Class: 
+Class-Path: fileattachments.jar fileattachments_api.jar spire.doc-4.10.9
+ .jar aspose-words-18.10.jar md_api.jar y.jar md.jar trove-3.0.3.jar lz4
+ -java_1.3.0.jar joda-time_2.9.1.jar slf4j.api_1.7.25.jar org.agrona_0.9
+ .12.jar tas.jar cmof14.jar io.aeron.client_1.7.0.jar io.aeron.driver_1.
+ 7.0.jar com.google.guava_18.0.0.jar javax_jmi-1_0-fr.jar ch.qos.logback
+ .core_1.2.3.jar com.nomagic.annotation-1.0.jar com.typesafe.config_1.3.
+ 0.jar junit.jar io.netty.codec_4.1.21.Final.jar org.apache.commons.io_2
+ .4.0.jar org.json_1.0.0.255610281323.jar ch.qos.logback.classic_1.2.3.j
+ ar com.typesafe.sslconfig_0.2.2.jar io.netty.buffer_4.1.21.Final.jar io
+ .netty.common_4.1.21.Final.jar org.jboss.netty_3.10.6.Final.jar com.typ
+ esafe.akka.osgi_2.5.10.jar io.netty.handler_4.1.21.Final.jar com.typesa
+ fe.akka.actor_2.5.10.jar com.typesafe.akka.slf4j_2.5.10.jar io.netty.re
+ solver_4.1.21.Final.jar com.typesafe.akka.remote_2.5.10.jar com.typesaf
+ e.akka.stream_2.5.10.jar io.netty.transport_4.1.21.Final.jar com.typesa
+ fe.akka.cluster_2.5.10.jar io.dropwizard.metrics.core_3.1.2.jar com.typ
+ esafe.akka.protobuf_2.5.10.jar org.apache.commons.compress_1.3.0.jar un
+ commons-maths-1.2.2a.jar org.opentest4j_1.0.0.v20170910-2246.jar com.no
+ magic.ci_17.0.5.v20190308-2012.jar io.dropwizard.metrics.graphite_3.1.2
+ .jar org.apache.commons.collections_3.2.1.jar org.apiguardian_1.0.0.v20
+ 170910-2246.jar com.teamdev.jxbrowser.chromium_6.22.0.jar org.apache.lo
+ g4j_1.2.15.v201005080500.jar org.hamcrest.core_1.3.0.v201303031735.jar 
+ com.typesafe.akka.cluster.tools_2.5.10.jar org.eclipse.osgi_3.12.50.v20
+ 170928-1321.jar com.nomagic.esi.api_1.0.0.v20190306-1144.jar com.nomagi
+ c.esi.emf_1.0.0.v20190306-1144.jar com.nomagic.esi.net_1.0.0.v20190306-
+ 1144.jar com.nomagic.magicdraw_17.0.5.201903082028.jar truezip-kernel-7
+ .4.3.jar truezip-driver-zip-7.4.3.jar org.apache.felix.scr_2.0.10.v2017
+ 0501-2007.jar org.apache.httpcomponents.httpclient_4.5.3.jar org.eclips
+ e.core.jobs_3.9.2.v20171030-1027.jar org.eclipse.osgi.util_3.4.0.v20170
+ 111-1608.jar org.junit.jupiter.api_5.0.0.v20170910-2246.jar org.reactiv
+ estreams.reactive-streams_1.0.2.jar com.nomagic.ci.binary_17.0.5.v20190
+ 308-2012.jar com.nomagic.esi.common_1.0.0.v20190306-1144.jar com.nomagi
+ c.esi.config_1.0.0.v20190306-1144.jar com.nomagic.esi.helper_1.0.0.v201
+ 90306-1144.jar com.nomagic.esi.stream_1.0.0.v20190306-1144.jar org.apac
+ he.commons.lang_2.6.0.v201404270220.jar org.eclipse.emf.ecore_2.13.0.v2
+ 0170609-0707.jar org.eclipse.equinox.ds_1.5.0.v20170307-1429.jar org.ec
+ lipse.uml2.common_1.5.0.v200905041045.jar com.nomagic.magicdraw.ce_18.1
+ .0.201903082028.jar org.apache.servicemix.bundles.jsr305_2.0.1.1.jar or
+ g.eclipse.emf.common_2.13.0.v20170609-0707.jar com.esotericsoftware.kry
+ o_2.22.0.201401231130.jar com.nomagic.ci.services_17.0.5.v20190308-2012
+ .jar com.nomagic.esi.core.msg_1.0.0.v20190306-1144.jar com.nomagic.esi.
+ services_1.0.0.v20190306-1144.jar com.nomagic.magicdraw.core_1.0.0.2019
+ 03082028.jar com.nomagic.magicdraw.uml2_2.5.1.201903082028.jar org.apac
+ he.commons.codec_1.9.0.v20170208-1614.jar org.junit.jupiter.params_5.0.
+ 0.v20170910-2246.jar org.apache.commons.logging_1.1.1.v201101211721.jar
+  org.eclipse.core.runtime_3.13.0.v20170207-1030.jar org.eclipse.equinox
+ .app_1.3.400.v20150715-1528.jar org.eclipse.osgi.services_3.6.0.v201702
+ 28-1906.jar com.nomagic.esi.serializer_1.0.0.v20190306-1144.jar com.nom
+ agic.esi.supervisor_1.0.0.v20190306-1144.jar org.eclipse.emf.ecore.xmi_
+ 2.13.0.v20170609-0707.jar org.eclipse.equinox.common_3.9.0.v20170207-14
+ 54.jar org.junit.platform.commons_1.0.0.v20170910-2246.jar org.scala-la
+ ng.modules.scala-java8-compat_0.8.0.jar com.nomagic.ci.persistence_17.0
+ .5.v20190308-2012.jar com.nomagic.esi.client.core_1.0.0.v20190306-1144.
+ jar com.nomagic.esi.api.messages_1.0.0.v20190306-1144.jar org.eclipse.c
+ ore.contenttype_3.6.0.v20170207-1037.jar org.eclipse.equinox.registry_3
+ .7.0.v20170222-1344.jar com.nomagic.magicdraw.security_18.3.0.201903082
+ 028.jar com.teamdev.jxbrowser.chromium.internal.mac_6.22.0.jar com.noma
+ gic.magicdraw.foundation_2.0.0.201903082028.jar com.nomagic.esi.seriali
+ zer.akka_1.0.0.v20190306-1144.jar com.teamdev.jxbrowser.chromium.intern
+ al.win32_6.22.0.jar com.teamdev.jxbrowser.chromium.internal.win64_6.22.
+ 0.jar org.eclipse.equinox.preferences_3.7.0.v20170126-2132.jar com.noma
+ gic.magicdraw.esi.uuidmap_18.1.0.201903082028.jar org.scala-lang.module
+ s.scala-parser-combinators_1.0.4.jar com.nomagic.ci.metamodel.project_1
+ 7.0.5.v20190308-2012.jar com.nomagic.ci.persistence.local_17.0.5.v20190
+ 308-2012.jar com.nomagic.magicdraw.core.diagram_18.1.0.201903082028.jar
+  com.nomagic.magicdraw.osgi.fragment_1.0.0.201903082028.jar com.teamdev
+ .jxbrowser.chromium.internal.linux64_6.22.0.jar org.apache.httpcomponen
+ ts.httpcore_4.4.6.v20170210-0925.jar com.nomagic.esi.service.actorsyste
+ m_1.0.0.v20190306-1144.jar com.nomagic.magicdraw.esi.esiproject_18.1.0.
+ 201903082028.jar com.nomagic.magicdraw.core.project.options_18.1.0.2019
+ 03082028.jar com.nomagic.magicdraw.esi.binary.metamodel_18.1.0.20190308
+ 2028.jar org.scala-lang.scala-library_2.12.4.v20171010-220511-VFINAL-c2
+ a5883.jar jna.jar jai_imageio.jar freehep-base.jar clibwrapper_jiio.jar
+  freehep-graphics2d.jar freehep-graphicsio.jar freehep-graphicsio-ps.ja
+ r freehep-graphicsio-emf.jar jimi.jar batik.jar brand.jar jhall.jar jti
+ dy.jar patch.jar xalan.jar flexlm.jar jsr305.jar md_api.jar axis.jar ja
+ xrpc.jar rsclient.jar axis-config.jar wsdl4j-1.5.1.jar mdserviceclient.
+ jar commons-discovery-0.2.jar launcher.jar brand_api.jar javassist.jar 
+ jide-diff.jar jide-dock.jar md_common.jar tw_common.jar activation.jar 
+ annotation.jar concurrent.jar gson-2.2.4.jar jide-gantt.jar jide-grids.
+ jar jnp-client.jar bridj-0.7.0.jar jide-action.jar jide-charts.jar jide
+ -common.jar jide-editor.jar EccpressoAll.jar jide-shortcut.jar jtidy-so
+ urces.zip md_common_api.jar tw_common_api.jar ehcache-2.10.1.jar jsr250
+ -api-1.0.jar md_common_test.jar xmlbeans-2.6.0.jar HTMLEditorLight.jar 
+ jide-components.jar JUnitParams-1.0.1.jar lucene-core-7.5.0.jar poi-3.1
+ 4-20160307.jar commons-compress-1.3.jar commons-logging-1.0.4.jar commo
+ ns-httpclient-3.1.jar poi-ooxml-3.14-20160307.jar hunspell-bridj-1.0.5-
+ SNAPSHOT.jar lucene-analyzers-common-7.5.0.jar poi-ooxml-schemas-3.14-2
+ 0160307.jar com.nomagic.osgi.launcher-17.0.5-SNAPSHOT.jar
+
