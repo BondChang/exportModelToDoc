@@ -1,9 +1,10 @@
 package diagram.entity;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Lane {
+public class Lane implements Serializable {
     private String laneName;
     private List<String> nodeList;
 

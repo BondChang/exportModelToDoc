@@ -13,6 +13,7 @@ import com.nomagic.uml2.ext.magicdraw.activities.mdintermediateactivities.MergeN
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Class;
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package;
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.*;
+import com.nomagic.uml2.ext.magicdraw.commonbehaviors.mdbasicbehaviors.Behavior;
 import com.nomagic.uml2.ext.magicdraw.compositestructures.mdcollaborations.Collaboration;
 import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Interaction;
 import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Lifeline;
@@ -73,6 +74,10 @@ public class ParserModelInfo {
                     diagramInfo.setWide(rootElement.getWide() + 1);
                     if (diagramInfo != null && diagramInfo.getDiagramName() != null) {
                         rootElement.addDiagramInfo(diagramInfo);
+                    }
+                    Collection<NamedElement> subMemberList = ((Activity) ownedMember).getMember();
+                    for (NamedElement subMember : subMemberList) {
+                        parserModelInfo(subMember, rootElement);
                     }
                 } else if (ownedMember instanceof Diagram) {
                     DiagramInfo diagramInfo = new DiagramInfo();
@@ -222,6 +227,8 @@ public class ParserModelInfo {
                 String stateName = namedElement.getName();
                 if (StringUtils.isNotBlank(stateName)) {
                     StateItem stateItem = new StateItem(stateName);
+                    setStateType(namedElement, stateItem);
+                    stateItem.setEdit(false);
                     stateFlow.getStateItemList().add(stateItem);
                 }
             }
@@ -540,10 +547,38 @@ public class ParserModelInfo {
             if (target != null) {
                 String rootName = target.getName();
                 StateItem stateItem = new StateItem(rootName);
+                setStateType(target, stateItem);
+                setCanEdit(target, stateItem);
                 addSubStmt(target, stateItem, edgeList, stateFlow, existList, null);
             }
         }
         return stateFlow;
+    }
+
+    private static void setCanEdit(ActivityNode target, StateItem stateItem) {
+        if (target != null) {
+            if (target instanceof CallBehaviorAction) {
+                CallBehaviorAction behaviorAction = (CallBehaviorAction) target;
+                Behavior behavior = behaviorAction.getBehavior();
+                if (behavior != null) {
+                    stateItem.setEdit(true);
+                    stateItem.setTypeName(behavior.getName());
+                    return;
+                }
+            }
+        }
+        stateItem.setEdit(false);
+    }
+
+    private static void setStateType(NamedElement target, StateItem stateItem) {
+        if (target instanceof CallBehaviorAction || target instanceof DecisionNode) {
+            stateItem.setType("(A)");
+        } else if (target instanceof State) {
+            stateItem.setType("(S)");
+        } else {
+            stateItem.setType("(N)");
+        }
+
     }
 
     private static void addSubStmt(ActivityNode rootNode, StateItem stateItem, Collection<ActivityEdge> edgeList, StateFlow stateFlow, List<String> existList, Branch wideBranch) {
@@ -558,6 +593,8 @@ public class ParserModelInfo {
                 if (sourceNode instanceof CallBehaviorAction && targetNode instanceof CallBehaviorAction) {
                     stateFlow.getStateItemList().add(stateItem);
                     StateItem subStateItem = new StateItem(targetNode.getName());
+                    setStateType(targetNode, subStateItem);
+                    setCanEdit(targetNode, subStateItem);
                     if (existList.contains(targetNode.getName())) {
                         stateFlow.getStateItemList().add(subStateItem);
                     } else {
@@ -584,6 +621,8 @@ public class ParserModelInfo {
                                     Branch branch = new Branch(guardStr, target.getName());
                                     stateItem.getBranchList().add(branch);
                                     StateItem subStateItem = new StateItem(target.getName());
+                                    setStateType(targetNode, subStateItem);
+                                    setCanEdit(targetNode, subStateItem);
                                     StateFlow subStateFlow = new StateFlow();
                                     branch.setStateFlow(subStateFlow);
                                     if (wideBranch == null) {

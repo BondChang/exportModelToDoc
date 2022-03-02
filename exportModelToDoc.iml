@@ -9,5 +9,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="lib" level="project" />
     <orderEntry type="library" name="MagicDraw" level="project" />
+    <orderEntry type="library" name="jna-4.5.2" level="project" />
+    <orderEntry type="library" name="spire.doc-5.2.3" level="project" />
   </component>
 </module>

@@ -2,10 +2,11 @@ package diagram.entity;
 
 import exportmodeltodoc.entity.StateFlow;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DiagramInfo {
+public class DiagramInfo implements Serializable {
     private String diagramName;
     private int diagramType;
     private int wide;

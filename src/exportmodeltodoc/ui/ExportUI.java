@@ -149,7 +149,7 @@ public class ExportUI extends JFrame {
 						ExportToDocService service = new ExportToDocService();
 						try {
 
-							service.exportDoc(templateFilePath, filePathName, wordTop);
+							//service.exportWord(templateFilePath, filePathName, wordTop);
 							frame.setVisible(false);
 							bClosed = true;
 						} catch (Exception e1) {

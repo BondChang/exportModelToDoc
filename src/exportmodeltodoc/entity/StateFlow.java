@@ -1,9 +1,10 @@
 package exportmodeltodoc.entity;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StateFlow {
+public class StateFlow implements Serializable {
    private List<StateItem> stateItemList;
 
     public StateFlow() {

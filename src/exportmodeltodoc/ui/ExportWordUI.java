@@ -9,10 +9,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.File;
 
 public class ExportWordUI extends JFrame {
@@ -26,6 +23,7 @@ public class ExportWordUI extends JFrame {
     private static JFrame treeFrame = null;
     private static WordElement rootElement = null;
     public static int exportType = -1;
+    public static String contentDisplayWide = "3";
 
 
     /**
@@ -35,8 +33,8 @@ public class ExportWordUI extends JFrame {
         final JTextField textField_1 = new JTextField();
         JFrame frame = new JFrame();
         JPanel contentPane = new JPanel();
-        JButton button_2 = new JButton();
-        JButton buttonReturn = new JButton();
+        JButton button_2;
+        JButton buttonReturn;
         frame.setVisible(true);
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -47,10 +45,12 @@ public class ExportWordUI extends JFrame {
         frame.setTitle("导出doc文档");
         // setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setBounds(200, 200, 800, 800);
-        contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-
         contentPane.setLayout(null);
+
+        JPanel jp = getJComboBox();
+
+        contentPane.add(jp);
 
         JButton button_1 = new JButton("选择导出路径");
         button_1.setFont(new Font("宋体", Font.PLAIN, 20));
@@ -63,7 +63,7 @@ public class ExportWordUI extends JFrame {
         textField_1.setFont(new Font("宋体", Font.PLAIN, 20));
         textField_1.setBounds(100, 103, 380, 62);
         String defaultWordPath = geneDefaultWordPath();
-        if(defaultWordPath!=null){
+        if (defaultWordPath != null) {
             textField_1.setText(defaultWordPath);
         }
         contentPane.add(textField_1);
@@ -150,7 +150,7 @@ public class ExportWordUI extends JFrame {
 //                            String filePath = file.getParent();
 //                            service.exportWord(wordElement, filePath + "/" + fileName + ".docx");
 //                        }
-                        service.exportWord(rootElement, file.getName());
+                        service.exportWord(rootElement, file.getAbsolutePath(), false);
                         frame.setVisible(false);
                         bClosed = true;
                     } catch (Exception e1) {
@@ -164,6 +164,41 @@ public class ExportWordUI extends JFrame {
             }
         });
 
+    }
+
+    /**
+     * 新建JComboBox
+     *
+     * @return
+     */
+    private JPanel getJComboBox() {
+        JPanel jp = new JPanel();    //创建面板
+        JLabel label1 = new JLabel("请选择目录的展示深度:         ");    //创建标签
+        label1.setFont(new Font("宋体", Font.PLAIN, 30));
+        //label1.setBounds(50, 300, 200, 62);
+        JComboBox cmb = new JComboBox();    //创建JComboBox//向下拉列表中添加一项
+        cmb.addItem("1");
+        cmb.addItem("2");
+        cmb.addItem("3");
+        cmb.addItem("4");
+        cmb.addItem("5");
+        cmb.addItem("6");
+        cmb.addItem("7");
+        cmb.addItem("8");
+        cmb.setFont(new Font("宋体", Font.PLAIN, 30));
+        cmb.setBounds(60, 300, 200, 62);
+        cmb.setSelectedIndex(2);
+        jp.add(label1);
+        jp.add(cmb);
+        jp.setVisible(true);
+        jp.setBounds(50, 300, 600, 100);
+        cmb.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                contentDisplayWide = (String) cmb.getSelectedItem();
+            }
+        });
+        return jp;
     }
 
     /**

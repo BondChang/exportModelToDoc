@@ -1,8 +1,9 @@
 package diagram.entity;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class BDDDiagram {
+public class BDDDiagram implements Serializable {
 	private String rootName;
 	private List<String> childList;
 

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WordElement implements Cloneable, Serializable {
+    private static final long serialVersionUID = 1l;
     private String elementName;
     private String elementValue;
     private int elementType;
@@ -14,7 +15,7 @@ public class WordElement implements Cloneable, Serializable {
     private String qualifiedName;
     private boolean select;
     private List<WordElement> wordElementList;
-    private List<DiagramInfo> diagramInfoList;
+    private transient List<DiagramInfo> diagramInfoList;
     private boolean hasInstance;
 
     public java.lang.String getElementName() {

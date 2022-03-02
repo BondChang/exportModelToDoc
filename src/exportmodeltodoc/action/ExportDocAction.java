@@ -27,10 +27,10 @@ import static exportmodeltodoc.action.ExportDocUtil.wipeNum;
 public class ExportDocAction extends DefaultBrowserAction {
 
     public ExportDocAction() {
-        super("", "word文档导出", null, null);
+        super("", "导出word文档", null, null);
     }
 
-    private static List<java.util.Map<String, String>> instanceMapList = new ArrayList<>();
+    public static List<java.util.Map<String, String>> instanceMapList = new ArrayList<>();
     public static Map<String, String> commentMap = new HashMap<>();
     List<String> parserElementList = new ArrayList<>();
 
@@ -112,6 +112,9 @@ public class ExportDocAction extends DefaultBrowserAction {
                     subWordElement.setQualifiedName(namedElement.getQualifiedName());
                     boolean hasInstance = ExportDocUtil.judgeHasInstance(namedElement);
                     subWordElement.setHasInstance(hasInstance);
+                    if (hasInstance) {
+                        subWordElement.setWide(0);
+                    }
                     rootElement.addWordElement(subWordElement);
                     addNodeInfo(namedElement, subWordElement);
                 }
@@ -135,6 +138,9 @@ public class ExportDocAction extends DefaultBrowserAction {
                 Collection<NamedElement> subMemberList = pak.getMember();
                 boolean hasInstance = ExportDocUtil.judgeHasInstance(pak);
                 packWordElement.setHasInstance(hasInstance);
+                if (hasInstance) {
+                    packWordElement.setWide(0);
+                }
                 addElementInfo(subMemberList, packWordElement, ownedMember);
             } else if (ownedMember instanceof Class) {
                 Class ownClass = (Class) ownedMember;
@@ -160,7 +166,8 @@ public class ExportDocAction extends DefaultBrowserAction {
      * @param packWordElement
      * @param ownedMember
      */
-    private void addElementInfo(Collection<NamedElement> subMemberList, WordElement packWordElement, NamedElement ownedMember) {
+    private void addElementInfo(Collection<NamedElement> subMemberList, WordElement packWordElement,
+                                NamedElement ownedMember) {
         for (NamedElement subMember : subMemberList) {
             WordElement subWordElement = new WordElement();
             String parentId = subMember.getObjectParent().getID();
@@ -176,8 +183,8 @@ public class ExportDocAction extends DefaultBrowserAction {
                     if (subMember instanceof InstanceSpecification) {
                         Classifier subMemberClass = ((InstanceSpecification) subMember).getClassifier().get(0);
                         if (subMemberClass != null) {
-                            if (Objects.equals(subMemberClass.getObjectParent().getHumanName(), ownedMember.getHumanName())) {
-                                System.out.println(subMember.getName());
+                            if (Objects.equals(subMemberClass.getObjectParent().getHumanName(),
+                                    ownedMember.getHumanName())) {
                                 /* 存储实例化的值 */
                                 saveInstanceValue((InstanceSpecification) subMember);
                             }
@@ -191,6 +198,7 @@ public class ExportDocAction extends DefaultBrowserAction {
                     }
                     subWordElement.setWide(packWordElement.getWide() + 1);
                     subWordElement.setQualifiedName(subMember.getQualifiedName());
+                    subWordElement.setElementType(addElementType(subMember));
                     /* 处理Property信息 */
                     if (subMember instanceof Property) {
                         if ((subMember).getHumanType().equals("Part Property")) {
@@ -221,7 +229,8 @@ public class ExportDocAction extends DefaultBrowserAction {
      * @param iSpecification
      * @param map
      */
-    private void getSlotInfo(InstanceSpecification iSpecification, InstanceValue instanceValue, java.util.Map<String, String> map) {
+    private void getSlotInfo(InstanceSpecification iSpecification, InstanceValue instanceValue,
+                             java.util.Map<String, String> map) {
         Collection<Slot> slotList = iSpecification.getSlot();
 
         for (Slot slot : slotList) {
@@ -232,7 +241,8 @@ public class ExportDocAction extends DefaultBrowserAction {
                     getSlotInfo(((InstanceValue) vSpecification).getInstance(), (InstanceValue) vSpecification, map);
                 } else if (vSpecification instanceof LiteralSpecification) {
                     if (instanceValue != null) {
-                        String nameString = ((InstanceValue) instanceValue).getOwningSlot().getDefiningFeature().getQualifiedName();
+                        String nameString = ((InstanceValue) instanceValue).getOwningSlot().getDefiningFeature()
+                                .getQualifiedName();
 
                         String valueString = getLiteralValue(vSpecification);
                         if (StringUtils.isNotBlank(nameString) && StringUtils.isNotBlank(valueString)) {
@@ -275,7 +285,6 @@ public class ExportDocAction extends DefaultBrowserAction {
         }
         return value;
     }
-
 
     /**
      * 获取单位
@@ -352,10 +361,11 @@ public class ExportDocAction extends DefaultBrowserAction {
             return ElementType.MODEL_TYPE;
         } else if (namedElement instanceof Package) {
             return ElementType.PACKAGE_TYPE;
-        } else if (namedElement instanceof Class) {
-            return ElementType.CLASS_TYPE;
-        } else if (namedElement instanceof Diagram) {
+        } else if (namedElement instanceof Diagram || namedElement instanceof Activity) {
             return ElementType.DIAGRAM_TYPE;
+        } else if (namedElement instanceof Class || namedElement instanceof UseCase
+                || namedElement instanceof Collaboration) {
+            return ElementType.CLASS_TYPE;
         } else if (namedElement instanceof Property) {
             if (namedElement.getHumanType().equals("Part Property")) {
                 return ElementType.PART_PROPERTY_TYPE;

@@ -1,7 +1,5 @@
 package exportmodeltodoc.service;
 
-import com.aspose.words.License;
-import com.aspose.words.ReportingEngine;
 import com.nomagic.magicdraw.core.Application;
 import com.nomagic.magicdraw.export.image.ImageExporter;
 import com.nomagic.magicdraw.uml.symbols.DiagramPresentationElement;
@@ -20,70 +18,12 @@ import exportmodeltodoc.ui.ExportWordUI;
 import org.apache.commons.lang.StringUtils;
 
 import java.awt.*;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.*;
 import java.util.List;
+import java.util.*;
 
 public class ExportToDocService {
-
-    public void exportDoc(String templateFilePath, String filePathName, WordTop wordTop) throws Exception {
-
-        // loadLicense();
-        Document doc = new Document(templateFilePath);
-        System.out.println(doc.toString());
-
-        buildReport(doc, wordTop, "wordTop", new Class[]{WordTop.class, ChapterElement.class, ContentElement.class,
-                ContentElementTable.class, ContentElementRow.class});
-//		doc.updateFields();
-//		doc.save(filePathName);
-    }
-
-    private void buildReport(final Document document, final Object dataSource, final String dataSourceName,
-                             final Class[] knownTypes) throws Exception {
-        ReportingEngine engine = new ReportingEngine();
-
-        for (Class knownType : knownTypes) {
-            engine.getKnownTypes().add(knownType);
-        }
-
-        // engine.buildReport(document, dataSource, dataSourceName);
-    }
-
-    //
-    private void loadLicense() {
-        // 杩斿洖璇诲彇鎸囧畾璧勬簮鐨勮緭鍏ユ祦
-        License license = new License();
-        // InputStream is = null;
-        ByteArrayInputStream inputStream = null;
-        try {
-
-            // is = new FileInputStream(new File("C:\\z-temp\\expDir\\license.xml"));
-            String s = "<License>" + "  <Data>" + "    <Products>" + "      <Product>Aspose.Total for Java</Product>"
-                    + "    </Products>" + "    <EditionType>Enterprise</EditionType>"
-                    + "    <SubscriptionExpiry>29991231</SubscriptionExpiry>"
-                    + "    <LicenseExpiry>29991231</LicenseExpiry>"
-                    + "    <SerialNumber>8bfe198c-7f0c-4ef8-8ff0-acc3237bf0d7</SerialNumber>" + "  </Data>"
-                    + "  <Signature>sNLLKGMUdF0r8O1kKilWAGdgfs2BvJb/2Xp8p5iuDVfZXmhppo+d0Ran1P9TKdjV4ABwAgKXxJ3jcQTqE/2IRfqwnPf8itN8aFZlV3TJPYeD3yWE7IT55Gz6EijUpC7aKeoohTb4w2fpox58wWoF3SNp6sK6jDfiAUGEHYJ9pjU=</Signature>"
-                    + "</License>";
-            inputStream = new ByteArrayInputStream(s.getBytes());
-
-            license.setLicense(inputStream);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException ex) {
-                }
-
-                inputStream = null;
-            }
-        }
-    }
+    private static String deleteFileName = null;
 
     /**
      * 导出word文档的入口
@@ -91,24 +31,40 @@ public class ExportToDocService {
      * @param rootElement
      * @param filePathName
      */
-    public void exportWord(WordElement rootElement, String filePathName) {
-        Document document = new Document();
+    public void exportWord(WordElement rootElement, String filePathName, boolean isInstance) {
+        if (isInstance == false && rootElement.isHasInstance()) {
+            deleteFileName = filePathName;
+        }
+        List<WordElement> wordElementList = rootElement.getWordElementList();
+        if (wordElementList == null || wordElementList.size() == 0) {
+            /* 生成仅含有标题的word文档 */
+            geneTitleWord(rootElement, filePathName);
+            return;
+        }
+
+        Document document = addStyleToDoc();
 
         /* 每个Section表示一个节，此程序中分成3分节。（题目、目录、正文） */
         Section titleSection = document.addSection();
-        /* 添加段落的Style，相同id不能重复添加 */
-        addParaStyle(document);
 
-        ListStyle listStyle = getListStyle(document);
-        Section catalogue = document.addSection();
+
+        Section catalogueSection = document.addSection();
+
         /* 添加正文的Session */
-        Section content = document.addSection();
-        /* 添加目录 */
-        catalogueInsert(document, catalogue);
-        /* 添加各级标题 */
-        addHeadTitle(rootElement, content, listStyle, filePathName);
+        Section contentSession = document.addSection();
 
-        // 更新目录表
+        /* 添加目录 */
+        insertCatalogue(document, catalogueSection);
+        /* 判断是否是实例化 */
+        if (isInstance) {
+            /* 添加正文内容 */
+            addContentInfo(wordElementList, contentSession, filePathName);
+        } else {
+            /* 添加各级标题 */
+            addHeadTitle(rootElement, contentSession, filePathName);
+        }
+
+        /* 更新目录表 */
         document.updateTableOfContents();
 
         /* 添加首页标题 */
@@ -116,8 +72,51 @@ public class ExportToDocService {
 
         /* 在页脚添加页码 */
         addFootPageNum(document);
-        document.saveToFile(filePathName, FileFormat.Docx);
 
+        /* 生成文档 */
+        document.saveToFile(filePathName, FileFormat.Docx);
+        /* 删除生成的多余文件 */
+        delFile();
+    }
+
+    /**
+     * 删除生成的多余文件
+     */
+    private void delFile() {
+        if (StringUtils.isNotBlank(deleteFileName)) {
+            File delFile = new File(deleteFileName);
+            if (delFile.exists()) {
+                delFile.delete();
+            }
+        }
+    }
+
+    /**
+     * 添加Document的格式
+     *
+     * @return
+     */
+    private Document addStyleToDoc() {
+        Document document = new Document();
+        /* 添加段落的Style，相同id不能重复添加 */
+        addParaStyle(document);
+        /* 添加标题的Style */
+        addListStyle(document);
+        return document;
+    }
+
+    /**
+     * 生成仅含标题的word文档
+     *
+     * @param rootElement
+     * @param filePathName
+     */
+    private void geneTitleWord(WordElement rootElement, String filePathName) {
+        Document document = new Document();
+        Section titleSection = document.addSection();
+        /* 添加首页标题 */
+        addDocTitle(titleSection, rootElement);
+        document.saveToFile(filePathName, FileFormat.Docx);
     }
 
     /**
@@ -157,7 +156,7 @@ public class ExportToDocService {
      * @param doc
      * @param section
      */
-    private void catalogueInsert(Document doc, Section section) {
+    private void insertCatalogue(Document doc, Section section) {
         Paragraph para = section.addParagraph();
         TextRange tr = para.appendText("目 录");
         tr.getCharacterFormat().setBold(true);
@@ -166,8 +165,7 @@ public class ExportToDocService {
         para.getFormat().setHorizontalAlignment(HorizontalAlignment.Center);
         // 设置段后间距
         para.getFormat().setAfterSpacing(10);
-
-        TableOfContent toc = new TableOfContent(doc, "{\\o \"1-9\" \\h \\z \\u}");
+        TableOfContent toc = new TableOfContent(doc, "{\\o \"1-" + ExportWordUI.contentDisplayWide + "\" \\h \\z \\u}");
         para = section.addParagraph();
         para.getItems().add(toc);
         para.appendFieldMark(FieldMarkType.Field_Separator);
@@ -209,83 +207,356 @@ public class ExportToDocService {
      * @param section
      * @param filePathName
      */
-    private void addHeadTitle(WordElement rootElement, Section section, ListStyle listStyle, String filePathName) {
+    private void addHeadTitle(WordElement rootElement, Section section, String filePathName) {
+        if (rootElement.isHasInstance()) {
+            /* 生成独立的word文档 */
+            geneInstanceWord(rootElement, filePathName);
+            return;
+        }
         List<WordElement> wordElementList = rootElement.getWordElementList();
-        geneDiagramImage(rootElement, section, filePathName);
+        addContentInfo(wordElementList, section, filePathName);
 
+//        if (wordElementList != null && wordElementList.size() > 0) {
+//            List<WordElement> leafNodeList = new ArrayList<WordElement>();
+//            List<WordElement> notLeafNodeList = new ArrayList<WordElement>();
+//            distinguishNode(leafNodeList, notLeafNodeList, wordElementList);
+//            /* 叶子节点生成表格 */
+//            // if (!leafNodeList.isEmpty() && leafNodeList.get(0).getWide() > 1) {
+//            if (!leafNodeList.isEmpty()) {
+//                for (WordElement wordElement : leafNodeList) {
+//                    geneDiagramImage(wordElement, section, filePathName);
+//                }
+//                if (ExportWordUI.exportType == ExportType.STRUCTEXPORT) {
+//                    String[] header = {"序号", "名称", "值", "实做值"};
+//                    String[][] data = new String[leafNodeList.size()][header.length];
+//                    int index = 1;
+//                    for (int i = 0; i < leafNodeList.size(); i++) {
+//                        data[i][0] = String.valueOf(index++);
+//                        data[i][1] = leafNodeList.get(i).getElementName();
+//                        data[i][2] = leafNodeList.get(i).getElementValue();
+//                        data[i][3] = "";
+//                    }
+//                    /* 添加表格 */
+//                    addTable(section, header, data);
+//                }
+//            }
+//            if (!notLeafNodeList.isEmpty()) {
+//                /* 非叶子结点生成标题 */
+//                for (WordElement wordElement : notLeafNodeList) {
+//                    Paragraph para = section.addParagraph();
+//                    para.appendText(wordElement.getElementName());
+//                    para.applyStyle(getParaStyle(wordElement.getWide()));
+//                    para.getListFormat().setListLevelNumber(wordElement.getWide() - 1);
+//                    para.getListFormat().applyStyle("CustomStyle");
+//                    geneDiagramImage(wordElement, section, filePathName);
+//                    /* 添加注释信息 */
+//                    String elementName = wordElement.getElementName();
+//
+//                    String commentStr = ExportDocAction.commentMap.getOrDefault(elementName, null);
+//                    if (commentStr != null) {
+//                        Paragraph commentPara = section.addParagraph();
+//                        commentPara.appendText(commentStr);
+//
+//                        commentPara.getFormat().setFirstLineIndent(25f);
+//                        commentPara.getFormat().setAfterSpacing(10f);
+//                    }
+//                    addHeadTitle(wordElement, section, filePathName);
+//                }
+//            }
+//
+//        }
+    }
+
+    /**
+     * 添加word的正文内容
+     *
+     * @param wordElementList
+     * @param section
+     * @param filePathName
+     */
+    private void addContentInfo(List<WordElement> wordElementList, Section section, String filePathName) {
+        /* 添加所有的package、class、part property */
+        List<WordElement> contentNodeList = new ArrayList<>();
+        /* 添加所有的instance package */
+        List<WordElement> instancePackageNodeList = new ArrayList<>();
+        /* 添加所有的port */
+        List<WordElement> portNodeList = new ArrayList<>();
+        /* 添加所有的 value Property */
+        List<WordElement> valueNodeList = new ArrayList<>();
+        /* 添加所有的diagram */
+        List<WordElement> diagramNodeList = new ArrayList<>();
+        /* 小标题的序号 */
+        int subTitleIndex = 0;
+        //geneDiagramImage(rootElement, section, filePathName);
         if (wordElementList != null && wordElementList.size() > 0) {
-            List<WordElement> leafNodeList = new ArrayList<WordElement>();
-            List<WordElement> notLeafNodeList = new ArrayList<WordElement>();
-            distinguishNode(leafNodeList, notLeafNodeList, wordElementList);
-            /* 叶子节点生成表格 */
-            // if (!leafNodeList.isEmpty() && leafNodeList.get(0).getWide() > 1) {
-            if (!leafNodeList.isEmpty()) {
-                for (WordElement wordElement : leafNodeList) {
-                    geneDiagramImage(wordElement, section, filePathName);
-                }
-                if (ExportWordUI.exportType == ExportType.STRUCTEXPORT) {
-                    String[] header = {"序号", "名称", "值", "实做值"};
-                    String[][] data = new String[leafNodeList.size()][header.length];
-                    int index = 1;
-                    for (int i = 0; i < leafNodeList.size(); i++) {
-                        data[i][0] = String.valueOf(index++);
-                        data[i][1] = leafNodeList.get(i).getElementName();
-                        data[i][2] = leafNodeList.get(i).getElementValue();
-                        data[i][3] = "";
-                    }
-                    /* 添加表格 */
-                    addTable(section, header, data);
-                }
+            distinguishNode(contentNodeList, instancePackageNodeList, portNodeList, valueNodeList, diagramNodeList, wordElementList);
+            /* 生成本层级的port表格 */
+            if (portNodeList != null && portNodeList.size() > 0) {
+                subTitleIndex++;
+                /* 添加端口的表格信息 */
+                genePortTable(portNodeList, section, subTitleIndex);
             }
-            if (!notLeafNodeList.isEmpty()) {
-                /* 非叶子结点生成标题 */
-                for (WordElement wordElement : notLeafNodeList) {
+            if (valueNodeList != null && valueNodeList.size() > 0) {
+                subTitleIndex++;
+                geneValueTable(valueNodeList, section, subTitleIndex);
+            }
+            if (diagramNodeList != null && diagramNodeList.size() > 0) {
+                geneDiagramImage(diagramNodeList, section, filePathName, subTitleIndex);
+            }
+            if (contentNodeList != null && contentNodeList.size() > 0) {
+                for (WordElement contentWord : contentNodeList) {
                     Paragraph para = section.addParagraph();
-                    para.appendText(wordElement.getElementName());
-                    para.applyStyle(getParaStyle(wordElement.getWide()));
-                    para.getListFormat().setListLevelNumber(wordElement.getWide() - 1);
-                    para.getListFormat().applyStyle(listStyle.getName());
-                    geneDiagramImage(wordElement, section, filePathName);
-                    /* 添加注释信息 */
-                    String elementName = wordElement.getElementName();
-
-                    String commentStr = ExportDocAction.commentMap.getOrDefault(elementName, null);
-                    if (commentStr != null) {
-                        Paragraph commentPara = section.addParagraph();
-                        commentPara.appendText(commentStr);
-
-                        commentPara.getFormat().setFirstLineIndent(25f);
-                        commentPara.getFormat().setAfterSpacing(10f);
+                    para.appendText(contentWord.getElementName());
+//                    if (contentWord.getDiagramInfoList() != null && contentWord.getDiagramInfoList().size() > 0) {
+//                        addDiagramImage(contentWord.getDiagramInfoList(), subTitleIndex, filePathName, section);
+//                    }
+//                    if (contentWord.getElementName().equals("机械臂取物")) {
+//                        System.out.println();
+//                    }
+                    para.applyStyle(getParaStyle(contentWord.getWide()));
+                    if (contentWord.getWide() >= 8) {
+                        para.getListFormat().setListLevelNumber(8);
+                    } else {
+                        para.getListFormat().setListLevelNumber(contentWord.getWide() - 1);
                     }
-                    addHeadTitle(wordElement, section, listStyle, filePathName);
+                    para.getListFormat().applyStyle("CustomStyle");
+                    addHeadTitle(contentWord, section, filePathName);
                 }
             }
-
+            if (instancePackageNodeList != null && instancePackageNodeList.size() > 0) {
+                for (WordElement instance : instancePackageNodeList) {
+                    geneInstanceWord(instance, filePathName);
+                }
+            }
         }
     }
 
-    private void geneDiagramImage(WordElement rootElement, Section section, String filePathName) {
-        if (rootElement.getDiagramInfoList() != null && rootElement.getDiagramInfoList().size() > 0) {
-            for (DiagramInfo diagramInfo : rootElement.getDiagramInfoList()) {
-                geneContentInfo(diagramInfo, section, filePathName);
+    private void geneInstanceWord(WordElement rootElement, String filePathName) {
+        int instanceSize = ExportDocAction.instanceMapList.size();
+        if (instanceSize <= 0) {
+            return;
+        }
+        /* 根据实例化的数量，对数据结构进行深拷贝并生成Word文档 */
+        for (int i = 0; i < instanceSize; i++) {
+            Map<String, String> name2ValueMap = ExportDocAction.instanceMapList.get(i);
+            WordElement wordElement = setValue2rootElement(rootElement, name2ValueMap);
+            File file = new File(filePathName);
+            String fileName = file.getName().substring(0, file.getName().indexOf("."));
+            String filePath = file.getParent();
+            exportWord(wordElement, filePath + "/" + fileName + i + ".docx", true);
+        }
+    }
+
+    /**
+     * 设置Instance的值
+     *
+     * @param rootElement
+     * @param name2ValueMap
+     * @return
+     */
+    public static WordElement setValue2rootElement(WordElement rootElement, Map<String, String> name2ValueMap) {
+        List<DiagramInfo> diagramInfoList = new ArrayList<>();
+        rootElement.setDiagramInfoList(diagramInfoList);
+        WordElement wordElement = deepCopy(rootElement);
+        //wordElement.setWordElementList(deepCopy(rootElement.getWordElementList()));
+        setValue(wordElement, name2ValueMap);
+        return wordElement;
+    }
+
+    /**
+     * 执行深拷贝
+     *
+     * @param obj
+     * @param <T>
+     * @return
+     */
+    public static <T extends Serializable> T deepCopy(T obj) {
+        T cloneObj = null;
+        try {
+            //写入字节流
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream obs = new ObjectOutputStream(out);
+            obs.writeObject(obj);
+            obs.close();
+
+            //分配内存，写入原始对象，生成新对象
+            ByteArrayInputStream ios = new ByteArrayInputStream(out.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(ios);
+            //返回生成的新对象
+            cloneObj = (T) ois.readObject();
+            ois.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return cloneObj;
+    }
+
+//    /**
+//     * 执行深拷贝
+//     *
+//     * @param src
+//     * @param <T>
+//     * @return
+//     * @throws IOException
+//     * @throws ClassNotFoundException
+//     */
+//    public static <T> List<T> deepCopy(List<T> src) throws IOException, ClassNotFoundException {
+//        ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+//        ObjectOutputStream out = new ObjectOutputStream(byteOut);
+//        out.writeObject(src);
+//        ByteArrayInputStream byteIn = new ByteArrayInputStream(byteOut.toByteArray());
+//        ObjectInputStream in = new ObjectInputStream(byteIn);
+//        return (List<T>) in.readObject();
+//    }
+
+    /**
+     * 设置值
+     *
+     * @param wordElement
+     * @param indexOfMap
+     */
+    private static void setValue(WordElement wordElement, Map<String, String> indexOfMap) {
+        if (wordElement != null) {
+            String elementQualifiedName = wordElement.getQualifiedName();
+            String elementValue = indexOfMap.getOrDefault(elementQualifiedName, null);
+            if (elementValue != null) {
+                wordElement.setElementValue(elementValue);
+                List<WordElement> wordElementList = wordElement.getWordElementList();
+                if (wordElementList != null && wordElementList.size() > 0) {
+                    for (WordElement subWordElement : wordElementList) {
+                        if (Objects.equals(subWordElement.getElementName(), wordElement.getElementName())) {
+                            subWordElement.setElementValue(elementValue);
+                        }
+                    }
+                }
+            }
+            List<WordElement> wordElementList = wordElement.getWordElementList();
+            if (wordElementList != null) {
+                for (WordElement subElement : wordElementList) {
+                    setValue(subElement, indexOfMap);
+                }
             }
         }
 
     }
 
-    public ListStyle getListStyle(Document document) {
+    /**
+     * 生成value的表格
+     *
+     * @param valueNodeList
+     * @param section
+     * @param subTitleIndex
+     */
+    private void geneValueTable(List<WordElement> valueNodeList, Section section, int subTitleIndex) {
+        Paragraph paragraph = section.addParagraph();
+        paragraph.appendText("(" + subTitleIndex + ")\tValue Property");
+        /* 添加小标题 */
+        String[] header = {"序号", "名称", "值"};
+        String[][] data = new String[valueNodeList.size()][header.length];
+        int index = 1;
+        for (int i = 0; i < valueNodeList.size(); i++) {
+            data[i][0] = String.valueOf(index++);
+            data[i][1] = valueNodeList.get(i).getElementName();
+            data[i][2] = valueNodeList.get(i).getElementValue();
+        }
+        /* 添加表格 */
+        addTable(section, header, data);
+    }
+
+    /**
+     * 添加表格的端口信息
+     *
+     * @param portNodeList
+     * @param section
+     * @param subTitleIndex
+     */
+    private void genePortTable(List<WordElement> portNodeList, Section section, int subTitleIndex) {
+        Paragraph paragraph = section.addParagraph();
+        paragraph.appendText("(" + subTitleIndex + ")\t端口");
+        /* 添加小标题 */
+        String[] header = {"序号", "名称", "值"};
+        String[][] data = new String[portNodeList.size()][header.length];
+        int index = 1;
+        for (int i = 0; i < portNodeList.size(); i++) {
+            data[i][0] = String.valueOf(index++);
+            data[i][1] = portNodeList.get(i).getElementName();
+            data[i][2] = portNodeList.get(i).getElementValue();
+        }
+        /* 添加表格 */
+        addTable(section, header, data);
+    }
+
+    /**
+     * 区分不同的Node类型
+     *
+     * @param contentNodeList
+     * @param instancePackageNodeList
+     * @param portNodeList
+     * @param valueNodeList
+     * @param diagramNodeList
+     * @param wordElementList
+     */
+    private void distinguishNode(List<WordElement> contentNodeList, List<WordElement> instancePackageNodeList, List<WordElement> portNodeList, List<WordElement> valueNodeList, List<WordElement> diagramNodeList, List<WordElement> wordElementList) {
+        for (WordElement wordElement : wordElementList) {
+            if (wordElement.isSelect()) {
+                int elementType = wordElement.getElementType();
+                if (elementType == ElementType.MODEL_TYPE || elementType == ElementType.CLASS_TYPE || elementType == ElementType.PART_PROPERTY_TYPE) {
+                    contentNodeList.add(wordElement);
+                } else if (elementType == ElementType.PACKAGE_TYPE) {
+                    if (wordElement.isHasInstance()) {
+                        instancePackageNodeList.add(wordElement);
+                    } else {
+                        contentNodeList.add(wordElement);
+                    }
+                } else if (elementType == ElementType.PORT_TYPE) {
+                    portNodeList.add(wordElement);
+                } else if (elementType == ElementType.VALUE_PROPERTY_TYPE) {
+                    valueNodeList.add(wordElement);
+                } else if (elementType == ElementType.DIAGRAM_TYPE) {
+                    diagramNodeList.add(wordElement);
+                }
+            }
+        }
+    }
+
+    private void geneDiagramImage(List<WordElement> diagramWordList, Section section, String filePathName, int subTitleIndex) {
+        for (WordElement diagramElement : diagramWordList) {
+            if (diagramElement.getDiagramInfoList() != null && diagramElement.getDiagramInfoList().size() > 0) {
+                addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section);
+            }
+        }
+
+
+    }
+
+    /**
+     * 添加九大图的信息
+     *
+     * @param diagramInfoList
+     * @param subTitleIndex
+     * @param filePathName
+     * @param section
+     */
+    private void addDiagramImage(List<DiagramInfo> diagramInfoList, int subTitleIndex, String filePathName, Section section) {
+        for (DiagramInfo diagramInfo : diagramInfoList) {
+            subTitleIndex++;
+            Paragraph paragraph = section.addParagraph();
+            paragraph.appendText("(" + subTitleIndex + ")\t" + diagramInfo.getDiagramName());
+            geneContentInfo(diagramInfo, section, filePathName);
+        }
+    }
+
+    public ListStyle addListStyle(Document document) {
         ListStyle listStyle = new ListStyle(document, ListType.Numbered);
         listStyle.setName("CustomStyle");
-
+        float level0TextPosition = listStyle.getLevels().get(0).getTextPosition();
+        float level0NumPosition = listStyle.getLevels().get(0).getNumberPosition();
         // Set the list pattern type and number prefix of each level
         BuiltinStyle defaultStyleType = listStyle.getDefaultStyleType();
-        listStyle.applyBaseStyle(BuiltinStyle.Balloon_Text);
+        //listStyle.applyBaseStyle(BuiltinStyle.Title);
         ListLevelCollection levels = listStyle.getLevels();
-//        System.out.println(levels.getCount());
-//        System.out.println(defaultStyleType);
         listStyle.getLevels().get(0).setPatternType(ListPatternType.Arabic);
         listStyle.getLevels().get(1).setNumberPrefix("\u0000.");
-
         listStyle.getLevels().get(1).setPatternType(ListPatternType.Arabic);
         listStyle.getLevels().get(2).setNumberPrefix("\u0000.\u0001.");
 
@@ -305,10 +576,52 @@ public class ExportToDocService {
         listStyle.getLevels().get(7).setNumberPrefix("\u0000.\u0001.\u0002.\u0003.\u0004.\u0005.\u0006.");
 
         listStyle.getLevels().get(7).setPatternType(ListPatternType.Arabic);
-        document.getListStyles().add(listStyle);
 
+        listStyle.getLevels().get(8).setNumberPrefix("\u0000.\u0001.\u0002.\u0003.\u0004.\u0005.\u0006.\u0007.");
+        listStyle.getLevels().get(8).setPatternType(ListPatternType.Arabic);
+
+        for (int i = 0; i < levels.getCount(); i++) { // 9
+            setListLevelTextPosition(listStyle.getLevels().get(i), level0TextPosition);// 设置缩进
+            setListLevelNumPosition(listStyle.getLevels().get(i), level0NumPosition);// 设置缩进
+            //setBold(listStyle.getLevels().get(i), true);// 是否黑
+            //setItalic(listStyle.getLevels().get(i), false);// 是否斜
+        }
+        setListLevelTextPosition(listStyle.getLevels().get(1), 54);// 设置缩进
+        setListLevelNumPosition(listStyle.getLevels().get(1), 5);// 设置缩进
+        setListLevelTextPosition(listStyle.getLevels().get(4), 54);// 设置缩进
+        setListLevelNumPosition(listStyle.getLevels().get(4), 30);// 设置缩进
+        document.getListStyles().add(listStyle);
         return listStyle;
     }
+
+    // 设置缩进
+    private void setListLevelTextPosition(ListLevel level, float level0TextPosition) {
+        if (level != null) {
+            level.setTextPosition(level0TextPosition);
+        }
+    }
+
+    // 设置缩进
+    private void setListLevelNumPosition(ListLevel level, float level0NumPosition) {
+        if (level != null) {
+            level.setNumberPosition(level0NumPosition);
+        }
+    }
+
+    // 是否黑
+    private void setBold(ListLevel level, boolean bold) {
+        if (level != null && level.getCharacterFormat() != null) {
+            level.getCharacterFormat().setBold(bold);
+        }
+    }
+
+    // 是否斜
+    private void setItalic(ListLevel level, boolean italic) {
+        if (level != null && level.getCharacterFormat() != null) {
+            level.getCharacterFormat().setItalic(italic);
+        }
+    }
+
 
     /**
      * 添加表格
@@ -322,7 +635,10 @@ public class ExportToDocService {
         Table table = section.addTable(true);
         // 设置表格的行数和列数
         table.resetCells(data.length + 1, header.length);
-
+        //CaptionNumberingFormat format = CaptionNumberingFormat.Number;
+        //IParagraph addCaption = table.addCaption("哈哈哈", format, CaptionPosition.Below_Item);
+        //addCaption.applyStyle("paraStyle");
+        //addCaption.getListFormat().applyStyle("paraStyle");
         // 设置第一行作为表格的表头并添加数据
         TableRow row = table.getRows().get(0);
         row.isHeader(true);
@@ -352,7 +668,9 @@ public class ExportToDocService {
                 range2.getCharacterFormat().setFontSize(10f);
             }
         }
-
+        /* 添加空行 */
+        Paragraph blankPara = section.addParagraph();
+        blankPara.appendText("\n");
     }
 
     /**
@@ -362,8 +680,7 @@ public class ExportToDocService {
      * @param notLeafNodeList
      * @param wordElementList
      */
-    private void distinguishNode(List<WordElement> leafNodeList, List<WordElement> notLeafNodeList,
-                                 List<WordElement> wordElementList) {
+    private void distinguishNode(List<WordElement> leafNodeList, List<WordElement> notLeafNodeList, List<WordElement> wordElementList) {
         for (WordElement wordElement : wordElementList) {
             if (wordElement.isSelect()) {
                 if (wordElement.getWordElementList() == null || wordElement.getWordElementList().isEmpty()) {
@@ -456,7 +773,6 @@ public class ExportToDocService {
                         bddComposeParagraph.getListFormat().applyBulletStyle();
                         bddComposeParagraph.getListFormat().getCurrentListLevel().setNumberPosition(-10);
                     }
-
                 }
             } else if (diagramType == DiagramType.STATE_MACHINE) {
                 StateFlow stateFlow = contentDiagramInfo.getStateFlow();
@@ -482,8 +798,9 @@ public class ExportToDocService {
                     for (ParaDiagram paraDiagram : paraDiagramList) {
                         Paragraph bddComposeParagraph = section.addParagraph();
                         bddComposeParagraph.appendText(paraDiagram.getName());
-                        bddComposeParagraph.appendText("\t");
+                        bddComposeParagraph.appendText("\t{");
                         bddComposeParagraph.appendText(paraDiagram.getCondition());
+                        bddComposeParagraph.appendText("}");
                         bddComposeParagraph.getListFormat().applyBulletStyle();
                         bddComposeParagraph.getListFormat().getCurrentListLevel().setNumberPosition(-10);
                     }
@@ -574,7 +891,8 @@ public class ExportToDocService {
         StringBuffer sb = new StringBuffer();
         List<StateItem> stateItemList = stateFlow.getStateItemList();
         for (StateItem stateItem : stateItemList) {
-            sb.append(blankContent + stateItem.getName() + "\n");
+            sb.append(blankContent + stateItem.getName());
+            appendStateType(stateItem, sb);
             if (stateItem.getBranchList() != null && stateItem.getBranchList().size() > 0) {
                 sb.append(addActiveBranchExpr(stateItem));
             }
@@ -608,10 +926,8 @@ public class ExportToDocService {
                         sb.append(blankContent + "else if(" + guardStr + "){\n");
                     }
                     for (StateItem subStateItem : subStateItemList) {
-                        sb.append(blankContent + "\t" + subStateItem.getName() + "\n");
-//                        if (subStateItem.getName().equals("生成路线图")) {
-//                            System.out.println("123");
-//                        }
+                        sb.append(blankContent + "\t" + subStateItem.getName());
+                        appendStateType(subStateItem, sb);
                         if (subStateItem.getBranchList() != null && subStateItem.getBranchList().size() > 0) {
                             sb.append(addActiveBranchExpr(subStateItem));
                         }
@@ -661,12 +977,14 @@ public class ExportToDocService {
             if (stateItem.getBranchList() == null || stateItem.getBranchList().size() == 0) {
                 if (!existList.contains(stateItem.getName())) {
                     existList.add(stateItem.getName());
-                    sb.append("\t执行 " + stateItem.getName() + "\n");
+                    sb.append("\t执行 " + stateItem.getName());
+                    appendStateType(stateItem, sb);
                 }
             } else {
                 if (!existList.contains(stateItem.getName())) {
                     existList.add(stateItem.getName());
-                    sb.append("\t执行 " + stateItem.getName() + "\n");
+                    sb.append("\t执行 " + stateItem.getName());
+                    appendStateType(stateItem, sb);
                 }
                 List<Branch> branchList = stateItem.getBranchList();
                 if (branchList != null && branchList.size() >= 1) {
@@ -711,6 +1029,18 @@ public class ExportToDocService {
 
     }
 
+    private void appendStateType(StateItem stateItem, StringBuffer sb) {
+        sb.append(" ");
+        if (StringUtils.isNotBlank(stateItem.getType())) {
+            sb.append(stateItem.getType());
+        }
+        if (stateItem.isEdit()) {
+            sb.append("(E)");
+            sb.append("(" + stateItem.getTypeName() + ")");
+        }
+        sb.append("\n");
+    }
+
     /**
      * 添加分支语句
      *
@@ -722,7 +1052,10 @@ public class ExportToDocService {
      */
     private void addBranchExpr(String condition, String guardStr, String targetName, String linkWord, StringBuffer sb) {
         sb.append("\t" + condition + "(" + guardStr + "){\n");
-        sb.append("\t\t" + linkWord + " " + targetName + "\n");
+        sb.append("\t\t" + linkWord + " " + targetName);
+        sb.append(" ");
+        sb.append("(S)");
+        sb.append("\n");
         sb.append("\t}\n");
     }
 
@@ -739,11 +1072,9 @@ public class ExportToDocService {
         if (!imageDir.exists()) {
             imageDir.mkdirs();
         }
-        final File diagramFile = new File(imageDir.getAbsolutePath(),
-                diagramEntity.getHumanName() + diagramEntity.getID() + ".png");
+        final File diagramFile = new File(imageDir.getAbsolutePath(), diagramEntity.getHumanName() + diagramEntity.getID() + ".png");
         try {
-            DiagramPresentationElement diagramPresentationElement = Application.getInstance().getProject()
-                    .getDiagram(diagramEntity);
+            DiagramPresentationElement diagramPresentationElement = Application.getInstance().getProject().getDiagram(diagramEntity);
             ImageExporter.export(diagramPresentationElement, ImageExporter.PNG, diagramFile);
         } catch (IOException e1) {
             e1.printStackTrace();

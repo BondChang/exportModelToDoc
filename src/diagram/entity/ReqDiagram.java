@@ -1,6 +1,8 @@
 package diagram.entity;
 
-public class ReqDiagram {
+import java.io.Serializable;
+
+public class ReqDiagram implements Serializable {
 	private String name;
 	private String type;
 

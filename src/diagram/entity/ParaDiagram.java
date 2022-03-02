@@ -1,6 +1,8 @@
 package diagram.entity;
 
-public class ParaDiagram {
+import java.io.Serializable;
+
+public class ParaDiagram implements Serializable {
 	private String name;
 	private String condition;
 
