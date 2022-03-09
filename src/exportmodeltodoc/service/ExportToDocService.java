@@ -582,14 +582,14 @@ public class ExportToDocService {
 
         for (int i = 0; i < levels.getCount(); i++) { // 9
             setListLevelTextPosition(listStyle.getLevels().get(i), level0TextPosition);// 设置缩进
-            setListLevelNumPosition(listStyle.getLevels().get(i), level0NumPosition);// 设置缩进
+            setListLevelNumPosition(listStyle.getLevels().get(i), -50);// 设置缩进
             //setBold(listStyle.getLevels().get(i), true);// 是否黑
             //setItalic(listStyle.getLevels().get(i), false);// 是否斜
         }
         setListLevelTextPosition(listStyle.getLevels().get(1), 54);// 设置缩进
-        setListLevelNumPosition(listStyle.getLevels().get(1), 5);// 设置缩进
+        setListLevelNumPosition(listStyle.getLevels().get(1), 5-32);// 设置缩进
         setListLevelTextPosition(listStyle.getLevels().get(4), 54);// 设置缩进
-        setListLevelNumPosition(listStyle.getLevels().get(4), 30);// 设置缩进
+        setListLevelNumPosition(listStyle.getLevels().get(4), 30-32);// 设置缩进
         document.getListStyles().add(listStyle);
         return listStyle;
     }
