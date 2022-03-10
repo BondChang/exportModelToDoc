@@ -587,9 +587,9 @@ public class ExportToDocService {
             //setItalic(listStyle.getLevels().get(i), false);// 是否斜
         }
         setListLevelTextPosition(listStyle.getLevels().get(1), 54);// 设置缩进
-        setListLevelNumPosition(listStyle.getLevels().get(1), 5-32);// 设置缩进
+        setListLevelNumPosition(listStyle.getLevels().get(1), 5 - 32);// 设置缩进
         setListLevelTextPosition(listStyle.getLevels().get(4), 54);// 设置缩进
-        setListLevelNumPosition(listStyle.getLevels().get(4), 30-32);// 设置缩进
+        setListLevelNumPosition(listStyle.getLevels().get(4), 30 - 32);// 设置缩进
         document.getListStyles().add(listStyle);
         return listStyle;
     }
@@ -635,6 +635,9 @@ public class ExportToDocService {
         Table table = section.addTable(true);
         // 设置表格的行数和列数
         table.resetCells(data.length + 1, header.length);
+        //table.autoFit(AutoFitBehaviorType.Auto_Fit_To_Window);
+        /* 调整表格的列宽，使得序号类比例较小，其他列平均分配 */
+        setTableColumnWidth(table, header.length);
         //CaptionNumberingFormat format = CaptionNumberingFormat.Number;
         //IParagraph addCaption = table.addCaption("哈哈哈", format, CaptionPosition.Below_Item);
         //addCaption.applyStyle("paraStyle");
@@ -644,7 +647,7 @@ public class ExportToDocService {
         row.isHeader(true);
         row.setHeight(20);
         row.setHeightType(TableRowHeightType.Exactly);
-        row.getRowFormat().setBackColor(Color.gray);
+        row.getRowFormat().setBackColor(Color.LIGHT_GRAY);
         for (int i = 0; i < header.length; i++) {
             row.getCells().get(i).getCellFormat().setVerticalAlignment(VerticalAlignment.Middle);
             Paragraph p = row.getCells().get(i).addParagraph();
@@ -658,8 +661,9 @@ public class ExportToDocService {
         // 添加数据到剩余行
         for (int r = 0; r < data.length; r++) {
             TableRow dataRow = table.getRows().get(r + 1);
-            dataRow.setHeight(25);
-            dataRow.setHeightType(TableRowHeightType.Exactly);
+            //dataRow.setHeightType();
+            //dataRow.setHeight(25);
+            dataRow.setHeightType(TableRowHeightType.Auto);
             dataRow.getRowFormat().setBackColor(Color.white);
             for (int c = 0; c < data[r].length; c++) {
                 dataRow.getCells().get(c).getCellFormat().setVerticalAlignment(VerticalAlignment.Middle);
@@ -671,6 +675,28 @@ public class ExportToDocService {
         /* 添加空行 */
         Paragraph blankPara = section.addParagraph();
         blankPara.appendText("\n");
+    }
+
+    /**
+     * 调整表格的列宽，使得序号类比例较小，其他列平均分配
+     *
+     * @param table
+     * @param columnCount
+     */
+    private void setTableColumnWidth(Table table, int columnCount) {
+        float sumPercent = 100f;
+        /* 序号列宽度较小 */
+        float indexColumn = 10f;
+        /* 内容列宽平均分配 */
+        float contentPercent = (sumPercent - indexColumn) / (columnCount - 1);
+        sumPercent -= indexColumn;
+        /* 序号列占百分之10，其他列平均分 */
+        table.getRows().get(0).getCells().get(0).setCellWidth(indexColumn, CellWidthType.Percentage);
+        for (int i = 1; i < columnCount - 1; i++) {
+            table.getRows().get(0).getCells().get(i).setCellWidth(contentPercent, CellWidthType.Percentage);
+            sumPercent -= contentPercent;
+        }
+        table.getRows().get(0).getCells().get(columnCount - 1).setCellWidth(sumPercent, CellWidthType.Percentage);
     }
 
     /**

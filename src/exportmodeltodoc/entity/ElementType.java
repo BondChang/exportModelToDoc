@@ -15,7 +15,9 @@ public class ElementType {
     public static int VALUE_PROPERTY_TYPE = 5;
     /* Port */
     public static int PORT_TYPE = 6;
+    /* INSTANCE */
+    public static int INSTANCE_TYPE = 7;
     /* Other */
-    public static int OTHER_TYPE = 7;
+    public static int OTHER_TYPE = 8;
 
 }

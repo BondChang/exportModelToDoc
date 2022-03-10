@@ -137,19 +137,6 @@ public class ExportWordUI extends JFrame {
                     }
                     ExportToDocService service = new ExportToDocService();
                     try {
-//                        if (exportType == ExportType.STRUCTEXPORT) {
-//                            for (int i = 0; i < wordElementList.size(); i++) {
-//                                WordElement wordElement = wordElementList.get(i);
-//                                String fileName = file.getName().substring(0, file.getName().indexOf("."));
-//                                String filePath = file.getParent();
-//                                service.exportWord(wordElement, filePath + "/" + fileName + i + ".docx");
-//                            }
-//                        } else {
-//                            WordElement wordElement = wordElementList.get(0);
-//                            String fileName = file.getName().substring(0, file.getName().indexOf("."));
-//                            String filePath = file.getParent();
-//                            service.exportWord(wordElement, filePath + "/" + fileName + ".docx");
-//                        }
                         service.exportWord(rootElement, file.getAbsolutePath(), false);
                         frame.setVisible(false);
                         bClosed = true;
