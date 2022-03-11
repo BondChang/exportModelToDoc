@@ -19,8 +19,10 @@ import org.apache.commons.lang.StringUtils;
 
 import java.awt.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.*;
+import java.util.Objects;
 
 public class ExportToDocService {
     private static String deleteFileName = null;
@@ -47,23 +49,19 @@ public class ExportToDocService {
         /* 每个Section表示一个节，此程序中分成3分节。（题目、目录、正文） */
         Section titleSection = document.addSection();
 
-
         Section catalogueSection = document.addSection();
-
         /* 添加正文的Session */
         Section contentSession = document.addSection();
-
         /* 添加目录 */
         insertCatalogue(document, catalogueSection);
         /* 判断是否是实例化 */
         if (isInstance) {
             /* 添加正文内容 */
-            addContentInfo(wordElementList, contentSession, filePathName);
+            addContentInfo(wordElementList, contentSession, filePathName, document);
         } else {
             /* 添加各级标题 */
-            addHeadTitle(rootElement, contentSession, filePathName);
+            addHeadTitle(rootElement, contentSession, filePathName, document);
         }
-
         /* 更新目录表 */
         document.updateTableOfContents();
 
@@ -207,14 +205,14 @@ public class ExportToDocService {
      * @param section
      * @param filePathName
      */
-    private void addHeadTitle(WordElement rootElement, Section section, String filePathName) {
+    private void addHeadTitle(WordElement rootElement, Section section, String filePathName, Document document) {
         if (rootElement.isHasInstance()) {
             /* 生成独立的word文档 */
             geneInstanceWord(rootElement, filePathName);
             return;
         }
         List<WordElement> wordElementList = rootElement.getWordElementList();
-        addContentInfo(wordElementList, section, filePathName);
+        addContentInfo(wordElementList, section, filePathName, document);
 
 //        if (wordElementList != null && wordElementList.size() > 0) {
 //            List<WordElement> leafNodeList = new ArrayList<WordElement>();
@@ -274,7 +272,7 @@ public class ExportToDocService {
      * @param section
      * @param filePathName
      */
-    private void addContentInfo(List<WordElement> wordElementList, Section section, String filePathName) {
+    private void addContentInfo(List<WordElement> wordElementList, Section section, String filePathName, Document document) {
         /* 添加所有的package、class、part property */
         List<WordElement> contentNodeList = new ArrayList<>();
         /* 添加所有的instance package */
@@ -285,11 +283,13 @@ public class ExportToDocService {
         List<WordElement> valueNodeList = new ArrayList<>();
         /* 添加所有的diagram */
         List<WordElement> diagramNodeList = new ArrayList<>();
+        /* 添加所有的附件信息 */
+        List<WordElement> attachedFileList = new ArrayList<>();
         /* 小标题的序号 */
         int subTitleIndex = 0;
         //geneDiagramImage(rootElement, section, filePathName);
         if (wordElementList != null && wordElementList.size() > 0) {
-            distinguishNode(contentNodeList, instancePackageNodeList, portNodeList, valueNodeList, diagramNodeList, wordElementList);
+            distinguishNode(contentNodeList, instancePackageNodeList, portNodeList, valueNodeList, diagramNodeList, attachedFileList, wordElementList);
             /* 生成本层级的port表格 */
             if (portNodeList != null && portNodeList.size() > 0) {
                 subTitleIndex++;
@@ -303,8 +303,21 @@ public class ExportToDocService {
             if (diagramNodeList != null && diagramNodeList.size() > 0) {
                 geneDiagramImage(diagramNodeList, section, filePathName, subTitleIndex);
             }
+            if (attachedFileList != null && attachedFileList.size() > 0) {
+                geneAttachedFile(attachedFileList, section, filePathName, subTitleIndex, document);
+            }
             if (contentNodeList != null && contentNodeList.size() > 0) {
                 for (WordElement contentWord : contentNodeList) {
+                    if (contentWord.getElementName().contains("自动巡视")) {
+                        System.out.println("123");
+                    }
+                    if (ExportWordUI.geneBlankContent == false) {
+                        boolean isBlankContent = true;
+                        isBlankContent = judgeIsBlankContent(contentWord);
+                        if (isBlankContent) {
+                            continue;
+                        }
+                    }
                     Paragraph para = section.addParagraph();
                     para.appendText(contentWord.getElementName());
 //                    if (contentWord.getDiagramInfoList() != null && contentWord.getDiagramInfoList().size() > 0) {
@@ -320,7 +333,7 @@ public class ExportToDocService {
                         para.getListFormat().setListLevelNumber(contentWord.getWide() - 1);
                     }
                     para.getListFormat().applyStyle("CustomStyle");
-                    addHeadTitle(contentWord, section, filePathName);
+                    addHeadTitle(contentWord, section, filePathName, document);
                 }
             }
             if (instancePackageNodeList != null && instancePackageNodeList.size() > 0) {
@@ -331,15 +344,75 @@ public class ExportToDocService {
         }
     }
 
+    private void geneAttachedFile(List<WordElement> attachedFileList, Section section, String filePathName, int subTitleIndex, Document document) {
+        for (WordElement wordElement : attachedFileList) {
+            String elementAttachedName = wordElement.getElementAttachedName();
+            File attachedFile = new File(new File(filePathName).getParentFile().getParentFile().getAbsolutePath() + "/" + elementAttachedName);
+            if (attachedFile.exists()) {
+                String imagePath = System.getProperty("user.dir") + "/image";
+                DocPicture docPicture = new DocPicture(document);
+                /* 说明是excel */
+                if (elementAttachedName.endsWith(".xlsx") || elementAttachedName.endsWith(".xls")) {
+                    subTitleIndex++;
+                    String excelImagePath = imagePath + "/excel.png";
+                    addAttachedFile(section, subTitleIndex, excelImagePath, OleObjectType.Excel_Worksheet, wordElement, docPicture, attachedFile);
+                    //addAttachedFile(section, subTitleIndex, excelImagePath, OleObjectType.Excel_Worksheet, wordElement, docPicture,attachedFile);
+                }
+                /* 说明是word */
+                else if (elementAttachedName.equals(".docx") || elementAttachedName.equals("doc")) {
+                    subTitleIndex++;
+                    String wordImagePath = imagePath + "/word.jpg";
+                    addAttachedFile(section, subTitleIndex, wordImagePath, OleObjectType.Word_Document, wordElement, docPicture, attachedFile);
+                }
+            }
+        }
+    }
+
+    private void addAttachedFile(Section section, int subTitleIndex, String excelImagePath, OleObjectType oleObjectType, WordElement wordElement, DocPicture docPicture, File attachedFile) {
+        if (subTitleIndex == 1) {
+            excelImagePath = "C:\\Users\\methon\\eclipse2019-workspace\\exportModelToDoc\\image\\excel.png";
+        } else {
+            excelImagePath = "C:\\Users\\methon\\eclipse2019-workspace\\exportModelToDoc\\image\\word.jpg";
+        }
+        Paragraph paragraphTitle = section.addParagraph();
+        paragraphTitle.appendText("(" + subTitleIndex + ")\t" + wordElement.getElementName());
+        Paragraph paragraphContent = section.addParagraph();
+        //DocPicture docPicture1 = paragraphContent.appendPicture(excelImagePath);
+        //paragraphContent.appendOleObject(attachedFile.getAbsolutePath(), docPicture1,oleObjectType.)
+        //docPicture.loadImage(excelImagePath);
+        paragraphContent.appendHyperlink(attachedFile.getAbsolutePath(), wordElement.getElementAttachedName(), HyperlinkType.File_Link);
+        //paragraphContent.appendOleObject(attachedFile.getAbsolutePath(), docPicture, oleObjectType);
+        paragraphContent.getFormat().setLeftIndent(30f);
+        //paragraphContent.getFormat().setHorizontalAlignment(HorizontalAlignment.Center);
+    }
+
+    private boolean judgeIsBlankContent(WordElement contentWord) {
+        List<WordElement> wordElementList = contentWord.getWordElementList();
+        if (wordElementList == null || wordElementList.size() == 0) {
+            return true;
+        }
+        for (WordElement wordElement : wordElementList) {
+            if ((wordElement.getElementType() != (ElementType.PACKAGE_TYPE)) && ((wordElement.getElementType() != (ElementType.OTHER_TYPE)))) {
+                return false;
+            }
+            boolean isBlankContent = judgeIsBlankContent(wordElement);
+            if (!isBlankContent) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void geneInstanceWord(WordElement rootElement, String filePathName) {
-        int instanceSize = ExportDocAction.instanceMapList.size();
+        int instanceSize = ExportDocAction.instanceListList.size();
         if (instanceSize <= 0) {
             return;
         }
         /* 根据实例化的数量，对数据结构进行深拷贝并生成Word文档 */
         for (int i = 0; i < instanceSize; i++) {
-            Map<String, String> name2ValueMap = ExportDocAction.instanceMapList.get(i);
-            WordElement wordElement = setValue2rootElement(rootElement, name2ValueMap);
+            List<InstanceContent> instanceContentList = ExportDocAction.instanceListList.get(i);
+            //Map<String, String> name2ValueMap = ExportDocAction.instanceMapList.get(i);
+            WordElement wordElement = setValue2rootElement(rootElement, instanceContentList);
             File file = new File(filePathName);
             String fileName = file.getName().substring(0, file.getName().indexOf("."));
             String filePath = file.getParent();
@@ -351,15 +424,15 @@ public class ExportToDocService {
      * 设置Instance的值
      *
      * @param rootElement
-     * @param name2ValueMap
+     * @param instanceContentList
      * @return
      */
-    public static WordElement setValue2rootElement(WordElement rootElement, Map<String, String> name2ValueMap) {
+    public static WordElement setValue2rootElement(WordElement rootElement, List<InstanceContent> instanceContentList) {
         List<DiagramInfo> diagramInfoList = new ArrayList<>();
         rootElement.setDiagramInfoList(diagramInfoList);
         WordElement wordElement = deepCopy(rootElement);
         //wordElement.setWordElementList(deepCopy(rootElement.getWordElementList()));
-        setValue(wordElement, name2ValueMap);
+        setValue(wordElement, instanceContentList);
         return wordElement;
     }
 
@@ -413,31 +486,108 @@ public class ExportToDocService {
      * 设置值
      *
      * @param wordElement
-     * @param indexOfMap
+     * @param instanceContentList
      */
-    private static void setValue(WordElement wordElement, Map<String, String> indexOfMap) {
+    private static void setValue(WordElement wordElement, List<InstanceContent> instanceContentList) {
         if (wordElement != null) {
             String elementQualifiedName = wordElement.getQualifiedName();
-            String elementValue = indexOfMap.getOrDefault(elementQualifiedName, null);
-            if (elementValue != null) {
-                wordElement.setElementValue(elementValue);
-                List<WordElement> wordElementList = wordElement.getWordElementList();
-                if (wordElementList != null && wordElementList.size() > 0) {
-                    for (WordElement subWordElement : wordElementList) {
-                        if (Objects.equals(subWordElement.getElementName(), wordElement.getElementName())) {
-                            subWordElement.setElementValue(elementValue);
-                        }
+            String elementReqValue = getInstanceReqValue(elementQualifiedName, instanceContentList);
+            String elementRealValue = getInstanceRealValue(elementQualifiedName, instanceContentList);
+            String elementAttachedName = getInstanceAttachedName(elementQualifiedName, instanceContentList);
+            //String elementValue = indexOfMap.getOrDefault(elementQualifiedName, null);
+            setInstanceValue(wordElement, elementReqValue, elementRealValue, elementAttachedName);
+            List<WordElement> wordElementList = wordElement.getWordElementList();
+            if (wordElementList != null && wordElementList.size() > 0) {
+                for (WordElement subWordElement : wordElementList) {
+                    if (Objects.equals(subWordElement.getElementName(), wordElement.getElementName())) {
+                        setInstanceValue(subWordElement, elementReqValue, elementRealValue, elementAttachedName);
                     }
                 }
             }
-            List<WordElement> wordElementList = wordElement.getWordElementList();
-            if (wordElementList != null) {
+            if (wordElementList != null && wordElementList.size() > 0) {
                 for (WordElement subElement : wordElementList) {
-                    setValue(subElement, indexOfMap);
+                    setValue(subElement, instanceContentList);
                 }
             }
         }
 
+    }
+
+    /**
+     * 设置实例的值
+     *
+     * @param wordElement
+     * @param elementReqValue
+     * @param elementRealValue
+     * @param elementAttachedName
+     */
+    private static void setInstanceValue(WordElement wordElement, String elementReqValue, String elementRealValue, String elementAttachedName) {
+        if (StringUtils.isNotBlank(elementReqValue)) {
+            wordElement.setElementRequireValue(elementReqValue);
+        }
+        if (StringUtils.isNotBlank(elementRealValue)) {
+            wordElement.setElementRealValue(elementRealValue);
+        }
+        if (StringUtils.isNotBlank(elementAttachedName)) {
+            wordElement.setElementAttachedName(elementAttachedName);
+        }
+    }
+
+    /**
+     * 获取附件的名称
+     *
+     * @param elementQualifiedName
+     * @param instanceContentList
+     * @return
+     */
+    private static String getInstanceAttachedName(String elementQualifiedName, List<InstanceContent> instanceContentList) {
+        if (instanceContentList == null || instanceContentList.size() <= 0) {
+            return null;
+        }
+        for (InstanceContent instanceContent : instanceContentList) {
+            if (instanceContent.getName().equals(elementQualifiedName)) {
+                return instanceContent.getAttachedName();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 获取实际值
+     *
+     * @param elementQualifiedName
+     * @param instanceContentList
+     * @return
+     */
+    private static String getInstanceRealValue(String elementQualifiedName, List<InstanceContent> instanceContentList) {
+        if (instanceContentList == null || instanceContentList.size() <= 0) {
+            return null;
+        }
+        for (InstanceContent instanceContent : instanceContentList) {
+            if (instanceContent.getName().equals(elementQualifiedName)) {
+                return instanceContent.getRealValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 获取要求值
+     *
+     * @param elementQualifiedName
+     * @param instanceContentList
+     * @return
+     */
+    private static String getInstanceReqValue(String elementQualifiedName, List<InstanceContent> instanceContentList) {
+        if (instanceContentList == null || instanceContentList.size() <= 0) {
+            return null;
+        }
+        for (InstanceContent instanceContent : instanceContentList) {
+            if (instanceContent.getName().equals(elementQualifiedName)) {
+                return instanceContent.getRequireValue();
+            }
+        }
+        return null;
     }
 
     /**
@@ -457,7 +607,10 @@ public class ExportToDocService {
         for (int i = 0; i < valueNodeList.size(); i++) {
             data[i][0] = String.valueOf(index++);
             data[i][1] = valueNodeList.get(i).getElementName();
-            data[i][2] = valueNodeList.get(i).getElementValue();
+            if (data[i][1].equals("供电接口说明")) {
+                System.out.println();
+            }
+            data[i][2] = valueNodeList.get(i).getElementRequireValue();
         }
         /* 添加表格 */
         addTable(section, header, data);
@@ -480,7 +633,7 @@ public class ExportToDocService {
         for (int i = 0; i < portNodeList.size(); i++) {
             data[i][0] = String.valueOf(index++);
             data[i][1] = portNodeList.get(i).getElementName();
-            data[i][2] = portNodeList.get(i).getElementValue();
+            data[i][2] = portNodeList.get(i).getElementRequireValue();
         }
         /* 添加表格 */
         addTable(section, header, data);
@@ -496,11 +649,14 @@ public class ExportToDocService {
      * @param diagramNodeList
      * @param wordElementList
      */
-    private void distinguishNode(List<WordElement> contentNodeList, List<WordElement> instancePackageNodeList, List<WordElement> portNodeList, List<WordElement> valueNodeList, List<WordElement> diagramNodeList, List<WordElement> wordElementList) {
+    private void distinguishNode(List<WordElement> contentNodeList, List<WordElement> instancePackageNodeList, List<WordElement> portNodeList, List<WordElement> valueNodeList, List<WordElement> diagramNodeList, List<WordElement> attachedFileList, List<WordElement> wordElementList) {
         for (WordElement wordElement : wordElementList) {
             if (wordElement.isSelect()) {
                 int elementType = wordElement.getElementType();
-                if (elementType == ElementType.MODEL_TYPE || elementType == ElementType.CLASS_TYPE || elementType == ElementType.PART_PROPERTY_TYPE) {
+                String elementAttachedName = wordElement.getElementAttachedName();
+                if (StringUtils.isNotBlank(elementAttachedName)) {
+                    attachedFileList.add(wordElement);
+                } else if (elementType == ElementType.MODEL_TYPE || elementType == ElementType.CLASS_TYPE || elementType == ElementType.PART_PROPERTY_TYPE) {
                     contentNodeList.add(wordElement);
                 } else if (elementType == ElementType.PACKAGE_TYPE) {
                     if (wordElement.isHasInstance()) {
@@ -524,6 +680,13 @@ public class ExportToDocService {
             if (diagramElement.getDiagramInfoList() != null && diagramElement.getDiagramInfoList().size() > 0) {
                 addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section);
             }
+//            if (diagramElement.getWordElementList() != null && diagramElement.getWordElementList().size() > 0) {
+//                for (WordElement wordElement : diagramWordList) {
+//                    if (wordElement.getDiagramInfoList() != null && wordElement.getDiagramInfoList().size() > 0) {
+//                        addDiagramImage(wordElement.getDiagramInfoList(), subTitleIndex, filePathName, section);
+//                    }
+//                }
+//            }
         }
 
 

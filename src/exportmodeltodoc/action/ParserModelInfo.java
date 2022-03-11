@@ -19,10 +19,7 @@ import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Interacti
 import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Lifeline;
 import com.nomagic.uml2.ext.magicdraw.statemachines.mdbehaviorstatemachines.*;
 import diagram.entity.*;
-import exportmodeltodoc.entity.Branch;
-import exportmodeltodoc.entity.StateFlow;
-import exportmodeltodoc.entity.StateItem;
-import exportmodeltodoc.entity.WordElement;
+import exportmodeltodoc.entity.*;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;

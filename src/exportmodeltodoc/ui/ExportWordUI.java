@@ -7,6 +7,8 @@ import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
@@ -24,7 +26,7 @@ public class ExportWordUI extends JFrame {
     private static WordElement rootElement = null;
     public static int exportType = -1;
     public static String contentDisplayWide = "3";
-
+    public static boolean geneBlankContent = false;
 
     /**
      * Create the frame.
@@ -47,11 +49,10 @@ public class ExportWordUI extends JFrame {
         frame.setBounds(200, 200, 800, 800);
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         contentPane.setLayout(null);
-
-        JPanel jp = getJComboBox();
-
-        contentPane.add(jp);
-
+        /* 添加目录深度的下拉选择框 */
+        contentPane.add(getJComboBox());
+        /* 添加是否过滤空目录的复选框 */
+        contentPane.add(getJCheckBox());
         JButton button_1 = new JButton("选择导出路径");
         button_1.setFont(new Font("宋体", Font.PLAIN, 20));
         button_1.addActionListener(new ActionListener() {
@@ -151,6 +152,34 @@ public class ExportWordUI extends JFrame {
             }
         });
 
+    }
+
+    private JPanel getJCheckBox() {
+        JPanel jp = new JPanel();    //创建面板
+        JLabel label1 = new JLabel("请选择是否过滤空白标题:         ");    //创建标签
+        label1.setFont(new Font("宋体", Font.PLAIN, 30));
+        //label1.setBounds();
+        //label1.setBounds(50, 400, 100, 100);
+        JCheckBox checkBox = new JCheckBox("");
+        checkBox.setSelected(true);
+        checkBox.setBounds(60, 420, 200, 62);
+        checkBox.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                JCheckBox jCheckBox = (JCheckBox) e.getSource();
+                if (jCheckBox.isSelected()) {
+                    geneBlankContent = false;
+                } else {
+                    geneBlankContent = true;
+                }
+            }
+        });
+        //checkBox.setFont(new Font("宋体", Font.PLAIN, 30));
+        jp.add(label1);
+        jp.add(checkBox);
+        jp.setVisible(true);
+        jp.setBounds(50, 420, 600, 100);
+        return jp;
     }
 
     /**

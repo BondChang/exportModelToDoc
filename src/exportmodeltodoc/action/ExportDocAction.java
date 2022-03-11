@@ -15,6 +15,7 @@ import com.nomagic.uml2.ext.magicdraw.compositestructures.mdcollaborations.Colla
 import com.nomagic.uml2.ext.magicdraw.compositestructures.mdports.Port;
 import com.nomagic.uml2.ext.magicdraw.mdusecases.UseCase;
 import exportmodeltodoc.entity.ElementType;
+import exportmodeltodoc.entity.InstanceContent;
 import exportmodeltodoc.entity.WordElement;
 import org.apache.commons.lang.StringUtils;
 
@@ -30,14 +31,14 @@ public class ExportDocAction extends DefaultBrowserAction {
         super("", "导出word文档", null, null);
     }
 
-    public static List<java.util.Map<String, String>> instanceMapList = new ArrayList<>();
+    public static List<List<InstanceContent>> instanceListList = new ArrayList<>();
     public static Map<String, String> commentMap = new HashMap<>();
     List<String> parserElementList = new ArrayList<>();
 
     public void actionPerformed(ActionEvent e) {
 
         Project project = Application.getInstance().getProject();
-        instanceMapList = new ArrayList<>();
+        instanceListList = new ArrayList<>();
         parserElementList.clear();
         commentMap.clear();
         Tree tree = getTree();
@@ -243,35 +244,77 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     private void saveInstanceValue(InstanceSpecification iSpecification) {
-        java.util.Map<String, String> map = new HashMap<>();
-        getSlotInfo(iSpecification, null, map);
-        instanceMapList.add(map);
+        List<InstanceContent> instanceValueList = new ArrayList<>();
+        getSlotValueInfo(iSpecification, null, instanceValueList);
+        getSlotFileInfo(iSpecification, instanceValueList);
+        instanceListList.add(instanceValueList);
+    }
+
+    private void getSlotFileInfo(InstanceSpecification iSpecification, List<InstanceContent> instanceValueList) {
+        Collection<Element> ownedElementList = iSpecification.getOwnedElement();
+        getAttacheFile(ownedElementList, instanceValueList);
+    }
+
+    private void getAttacheFile(Collection<Element> ownedElementList, List<InstanceContent> instanceValueList) {
+        for (Element ownedElement : ownedElementList) {
+            if (ownedElement instanceof Comment) {
+                Comment comment = (Comment) ownedElement;
+                String humanName = comment.getHumanName();
+                /* 说明是附件 */
+                if (humanName.equals("Attached File")) {
+                    Element owner = comment.getOwner();
+                    if (owner instanceof InstanceSpecification) {
+                        InstanceSpecification instanceSpecification = (InstanceSpecification) owner;
+                        Classifier classifier = instanceSpecification.getClassifier().get(0);
+                        Collection<TypedElement> typedElementOfTypeList = classifier.get_typedElementOfType();
+                        for (TypedElement typedElement : typedElementOfTypeList) {
+                            InstanceContent instanceContent = new InstanceContent(typedElement.getQualifiedName());
+                            instanceContent.setAttachedName(comment.getBody());
+                            instanceValueList.add(instanceContent);
+                        }
+                    }
+                }
+
+            } else if (ownedElement instanceof Slot) {
+                Slot slot = (Slot) ownedElement;
+                Collection<Element> subElementList = slot.getOwnedElement();
+                getAttacheFile(subElementList, instanceValueList);
+            } else if (ownedElement instanceof InstanceValue) {
+                InstanceValue instanceValue = (InstanceValue) ownedElement;
+                Collection<Element> ownedElement1 = instanceValue.getInstance().getOwnedElement();
+                getAttacheFile(ownedElement1, instanceValueList);
+            }
+        }
     }
 
     /**
      * 获取instance的子节点信息
      *
      * @param iSpecification
-     * @param map
+     * @param instanceValueList
      */
-    private void getSlotInfo(InstanceSpecification iSpecification, InstanceValue instanceValue,
-                             java.util.Map<String, String> map) {
+    private void getSlotValueInfo(InstanceSpecification iSpecification, InstanceValue instanceValue,
+                                  List<InstanceContent> instanceValueList) {
         Collection<Slot> slotList = iSpecification.getSlot();
 
         for (Slot slot : slotList) {
             List<ValueSpecification> valueList = slot.getValue();
-
             for (ValueSpecification vSpecification : valueList) {
                 if (vSpecification instanceof InstanceValue) {
-                    getSlotInfo(((InstanceValue) vSpecification).getInstance(), (InstanceValue) vSpecification, map);
+                    getSlotValueInfo(((InstanceValue) vSpecification).getInstance(), (InstanceValue) vSpecification, instanceValueList);
                 } else if (vSpecification instanceof LiteralSpecification) {
                     if (instanceValue != null) {
                         String nameString = ((InstanceValue) instanceValue).getOwningSlot().getDefiningFeature()
                                 .getQualifiedName();
-
+                        System.out.println(nameString);
+                        if (nameString.equals("产品信息::产品信息::型号代号")) {
+                            System.out.println();
+                        }
                         String valueString = getLiteralValue(vSpecification);
                         if (StringUtils.isNotBlank(nameString) && StringUtils.isNotBlank(valueString)) {
-                            map.put(nameString, valueString);
+                            InstanceContent instanceContent = new InstanceContent(nameString);
+                            instanceContent.setRequireValue(valueString);
+                            instanceValueList.add(instanceContent);
                         }
                     }
                 }

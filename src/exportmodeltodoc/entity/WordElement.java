@@ -9,7 +9,9 @@ import java.util.List;
 public class WordElement implements Cloneable, Serializable {
     private static final long serialVersionUID = 1l;
     private String elementName;
-    private String elementValue;
+    private String elementRequireValue;
+    private String elementRealValue;
+    private String elementAttachedName;
     private int elementType;
     private int wide;
     private String qualifiedName;
@@ -26,13 +28,7 @@ public class WordElement implements Cloneable, Serializable {
         this.elementName = elementName;
     }
 
-    public java.lang.String getElementValue() {
-        return elementValue;
-    }
 
-    public void setElementValue(java.lang.String elementValue) {
-        this.elementValue = elementValue;
-    }
 
     public int getWide() {
         return wide;
@@ -83,6 +79,30 @@ public class WordElement implements Cloneable, Serializable {
             e.printStackTrace();
         }
         return wordElement;
+    }
+
+    public String getElementRequireValue() {
+        return elementRequireValue;
+    }
+
+    public void setElementRequireValue(String elementRequireValue) {
+        this.elementRequireValue = elementRequireValue;
+    }
+
+    public String getElementRealValue() {
+        return elementRealValue;
+    }
+
+    public void setElementRealValue(String elementRealValue) {
+        this.elementRealValue = elementRealValue;
+    }
+
+    public String getElementAttachedName() {
+        return elementAttachedName;
+    }
+
+    public void setElementAttachedName(String elementAttachedName) {
+        this.elementAttachedName = elementAttachedName;
     }
 
     public void addDiagramInfo(DiagramInfo diagramInfo) {
