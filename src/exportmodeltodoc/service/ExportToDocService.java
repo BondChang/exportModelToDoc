@@ -678,7 +678,7 @@ public class ExportToDocService {
     private void geneDiagramImage(List<WordElement> diagramWordList, Section section, String filePathName, int subTitleIndex) {
         for (WordElement diagramElement : diagramWordList) {
             if (diagramElement.getDiagramInfoList() != null && diagramElement.getDiagramInfoList().size() > 0) {
-                addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section);
+                addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section,diagramElement);
             }
 //            if (diagramElement.getWordElementList() != null && diagramElement.getWordElementList().size() > 0) {
 //                for (WordElement wordElement : diagramWordList) {
@@ -694,14 +694,22 @@ public class ExportToDocService {
 
     /**
      * 添加九大图的信息
-     *
-     * @param diagramInfoList
+     *  @param diagramInfoList
      * @param subTitleIndex
      * @param filePathName
      * @param section
+     * @param diagramElement
      */
-    private void addDiagramImage(List<DiagramInfo> diagramInfoList, int subTitleIndex, String filePathName, Section section) {
+    private void addDiagramImage(List<DiagramInfo> diagramInfoList, int subTitleIndex, String filePathName, Section section, WordElement diagramElement) {
         for (DiagramInfo diagramInfo : diagramInfoList) {
+            /* 如果是活动图，多添加一层标题 */
+            if (diagramInfo.getDiagramType() == DiagramType.ACTIVITY) {
+                Paragraph para = section.addParagraph();
+                para.appendText(diagramInfo.getDiagramName());
+                para.applyStyle(getParaStyle(diagramInfo.getWide()));
+                para.getListFormat().setListLevelNumber(diagramElement.getWide() - 1);
+                para.getListFormat().applyStyle("CustomStyle");
+            }
             subTitleIndex++;
             Paragraph paragraph = section.addParagraph();
             paragraph.appendText("(" + subTitleIndex + ")\t" + diagramInfo.getDiagramName());
