@@ -19,12 +19,17 @@ import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Interacti
 import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Lifeline;
 import com.nomagic.uml2.ext.magicdraw.statemachines.mdbehaviorstatemachines.*;
 import diagram.entity.*;
-import exportmodeltodoc.entity.*;
+import exportmodeltodoc.entity.Branch;
+import exportmodeltodoc.entity.StateFlow;
+import exportmodeltodoc.entity.StateItem;
+import exportmodeltodoc.entity.WordElement;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static exportmodeltodoc.action.ExportDocUtil.wipeNum;
 
 public class ParserModelInfo {
 
@@ -224,7 +229,7 @@ public class ParserModelInfo {
                 String stateName = namedElement.getName();
                 if (StringUtils.isNotBlank(stateName)) {
                     StateItem stateItem = new StateItem(stateName);
-                    setStateType(namedElement, stateItem);
+                    stateItem.setType(setStateType(namedElement));
                     stateItem.setEdit(false);
                     stateFlow.getStateItemList().add(stateItem);
                 }
@@ -382,24 +387,31 @@ public class ParserModelInfo {
         if (namespace instanceof Package) {
             Package bddPackage = (Package) namespace;
             Collection<PackageableElement> packagedElement = bddPackage.getPackagedElement();
+            List<BDDChild> bddClassList = new ArrayList<>();
             for (PackageableElement ele : packagedElement) {
                 if (ele instanceof Class) {
                     Class bddClass = (Class) ele;
-                    addBDDInfo(bddClass, diagramInfo);
+                    String childDiagramName = getChildDiagram(bddClass);
+                    BDDChild bddChild = new BDDChild(bddClass.getName(), childDiagramName);
+                    bddChild.setType(setStateType(bddClass));
+                    bddClassList.add(bddChild);
                 }
             }
-
+            BDDDiagram bddDiagram = new BDDDiagram(wipeNum(namespace.getName()), bddClassList);
+            diagramInfo.setBddDiagram(bddDiagram);
+//            for (Class bddClass : bddClassList) {
+//                addBDDInfo(bddClass, diagramInfo);
+//            }
         } else if (namespace instanceof Class) {
             Class bddClass = (Class) namespace;
             addBDDInfo(bddClass, diagramInfo);
-
         }
     }
 
     private static void addBDDInfo(Class bddClass, DiagramInfo diagramInfo) {
         Collection<NamedElement> memberList = bddClass.getMember();
         /* 筛选子元素，只留下Part property */
-        List<String> filterSubMemberList = filterSubMember(memberList);
+        List<BDDChild> filterSubMemberList = filterSubMember(memberList);
         if (filterSubMemberList != null && filterSubMemberList.size() > 0) {
             BDDDiagram bddDiagram = new BDDDiagram(bddClass.getName(), filterSubMemberList);
             diagramInfo.setBddDiagram(bddDiagram);
@@ -407,16 +419,31 @@ public class ParserModelInfo {
 
     }
 
-    private static List<String> filterSubMember(Collection<NamedElement> memberList) {
-        List<String> propList = new ArrayList<String>();
+    private static List<BDDChild> filterSubMember(Collection<NamedElement> memberList) {
+        List<BDDChild> propList = new ArrayList<BDDChild>();
         if (memberList != null && memberList.size() > 0) {
             for (NamedElement subElement : memberList) {
-                if (subElement instanceof Property) {
-                    propList.add(subElement.getName());
+                if (subElement instanceof Class) {
+                    Class bddClass = (Class) subElement;
+                    System.out.println(bddClass.getName());
+                    String childDiagramName = getChildDiagram(bddClass);
+                    BDDChild bddChild = new BDDChild(subElement.getName(), childDiagramName);
+                    bddChild.setType(setStateType(subElement));
+                    propList.add(bddChild);
                 }
             }
         }
         return propList;
+    }
+
+    private static String getChildDiagram(Class bddClass) {
+        Collection<NamedElement> memberList = bddClass.getMember();
+        for (NamedElement element : memberList) {
+            if (element instanceof Diagram) {
+                return ((Diagram) element).getName();
+            }
+        }
+        return "";
     }
 
     /**
@@ -544,7 +571,7 @@ public class ParserModelInfo {
             if (target != null) {
                 String rootName = target.getName();
                 StateItem stateItem = new StateItem(rootName);
-                setStateType(target, stateItem);
+                stateItem.setType(setStateType(target));
                 setCanEdit(target, stateItem);
                 addSubStmt(target, stateItem, edgeList, stateFlow, existList, null);
             }
@@ -567,13 +594,20 @@ public class ParserModelInfo {
         stateItem.setEdit(false);
     }
 
-    private static void setStateType(NamedElement target, StateItem stateItem) {
+    private static String setStateType(NamedElement target) {
         if (target instanceof CallBehaviorAction || target instanceof DecisionNode) {
-            stateItem.setType("(A)");
+            return "(A)";
+            //stateItem.setType("(A)");
         } else if (target instanceof State) {
-            stateItem.setType("(S)");
+            return "(S)";
+            //stateItem.setType("(S)");
+        } else if (target instanceof Property) {
+            return ("(P)");
+        } else if (target instanceof Class) {
+            return ("(B)");
         } else {
-            stateItem.setType("(N)");
+            return ("(N)");
+            //stateItem.setType("(N)");
         }
 
     }
@@ -590,7 +624,7 @@ public class ParserModelInfo {
                 if (sourceNode instanceof CallBehaviorAction && targetNode instanceof CallBehaviorAction) {
                     stateFlow.getStateItemList().add(stateItem);
                     StateItem subStateItem = new StateItem(targetNode.getName());
-                    setStateType(targetNode, subStateItem);
+                    subStateItem.setType(setStateType(targetNode));
                     setCanEdit(targetNode, subStateItem);
                     if (existList.contains(targetNode.getName())) {
                         stateFlow.getStateItemList().add(subStateItem);
@@ -618,7 +652,7 @@ public class ParserModelInfo {
                                     Branch branch = new Branch(guardStr, target.getName());
                                     stateItem.getBranchList().add(branch);
                                     StateItem subStateItem = new StateItem(target.getName());
-                                    setStateType(targetNode, subStateItem);
+                                    subStateItem.setType(setStateType(targetNode));
                                     setCanEdit(targetNode, subStateItem);
                                     StateFlow subStateFlow = new StateFlow();
                                     branch.setStateFlow(subStateFlow);

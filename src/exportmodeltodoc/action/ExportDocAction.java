@@ -57,36 +57,39 @@ public class ExportDocAction extends DefaultBrowserAction {
             addRootChildInfo(rootElement, ownedMemberList);
             SelectTree selectTree = new SelectTree(rootElement);
         }
-        /* 在包上进行右键 */
-        else if (userObject instanceof Package) {
-            Package packageContent = (Package) userObject;
-            WordElement rootElement = createRootElement(packageContent);
-            addNodeInfo(packageContent, rootElement);
-            SelectTree selectTree = new SelectTree(rootElement);
-        }
-        /* 在block上进行右键 */
-        else if (userObject instanceof Class) {
-            Class ownClass = (Class) userObject;
-            WordElement rootElement = createRootElement(ownClass);
-            addNodeInfo(ownClass, rootElement);
-            SelectTree selectTree = new SelectTree(rootElement);
-        }
-        /* 在图上右键 */
-        else if (userObject instanceof Diagram) {
-            com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Diagram diagram = (com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Diagram) userObject;
-            WordElement rootElement = createRootElement(diagram);
-            addNodeInfo(diagram, rootElement);
-            SelectTree selectTree = new SelectTree(rootElement);
-        }
+//        /* 在包上进行右键 */
+//        else if (userObject instanceof Package) {
+//            Package packageContent = (Package) userObject;
+//            WordElement rootElement = createRootElement(packageContent);
+//            addNodeInfo(packageContent, rootElement);
+//            SelectTree selectTree = new SelectTree(rootElement);
+//        }
+//        /* 在block上进行右键 */
+//        else if (userObject instanceof Class) {
+//            Class ownClass = (Class) userObject;
+//            WordElement rootElement = createRootElement(ownClass);
+//            addNodeInfo(ownClass, rootElement);
+//            SelectTree selectTree = new SelectTree(rootElement);
+//        }
+//        /* 在图上右键 */
+//        else if (userObject instanceof Diagram) {
+//            com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Diagram diagram = (com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Diagram) userObject;
+//            WordElement rootElement = createRootElement(diagram);
+//            addNodeInfo(diagram, rootElement);
+//            SelectTree selectTree = new SelectTree(rootElement);
+//        }
         /* 在实例上进行右键 */
         else if (userObject instanceof InstanceSpecification) {
             InstanceSpecification instanceSpecification = (InstanceSpecification) userObject;
             /* 获取实例的真实实体，用于后续实例表格的生成 */
+            TypedElement typedElement = getTypeElement(instanceSpecification);
+
             Classifier classifier = instanceSpecification.getClassifier().get(0);
             /* 生成表格的骨架 */
             if (classifier instanceof Class) {
                 WordElement rootElement = createRootElement(classifier);
                 rootElement.setHasInstance(true);
+                rootElement.setQualifiedName(typedElement.getQualifiedName());
                 addNodeInfo(classifier, rootElement);
                 /* 存储实例的值 */
                 saveInstanceValue(instanceSpecification);
@@ -102,19 +105,32 @@ public class ExportDocAction extends DefaultBrowserAction {
 //               // System.out.println(ownedElement);
 //            }
 //            SelectTree selectTree = new SelectTree(rootElement);
-        }
-        /* 可以理解成在元素上右键 */
-        else if (userObject instanceof NamedElement) {
-            WordElement rootElement = createRootElement((NamedElement) userObject);
+        } else if (userObject instanceof NamedElement) {
+            NamedElement namedElement = (NamedElement) userObject;
+            WordElement rootElement = createRootElement(namedElement);
             if (((NamedElement) userObject).getHumanType().equals("Part Property")) {
                 Type ownType = ((Property) userObject).getType();
                 if (ownType instanceof Class) {
                     Class ownClass = (Class) ownType;
                     addNodeInfo(ownClass, rootElement);
                 }
+            } else {
+                addNodeInfo(namedElement, rootElement);
             }
             SelectTree selectTree = new SelectTree(rootElement);
         }
+        /* 可以理解成在元素上右键 */
+//        else if (userObject instanceof NamedElement) {
+//            WordElement rootElement = createRootElement((NamedElement) userObject);
+//            if (((NamedElement) userObject).getHumanType().equals("Part Property")) {
+//                Type ownType = ((Property) userObject).getType();
+//                if (ownType instanceof Class) {
+//                    Class ownClass = (Class) ownType;
+//                    addNodeInfo(ownClass, rootElement);
+//                }
+//            }
+//            SelectTree selectTree = new SelectTree(rootElement);
+//        }
         SessionManager.getInstance().closeSession(project);
 
     }
@@ -265,13 +281,11 @@ public class ExportDocAction extends DefaultBrowserAction {
                     Element owner = comment.getOwner();
                     if (owner instanceof InstanceSpecification) {
                         InstanceSpecification instanceSpecification = (InstanceSpecification) owner;
-                        Classifier classifier = instanceSpecification.getClassifier().get(0);
-                        Collection<TypedElement> typedElementOfTypeList = classifier.get_typedElementOfType();
-                        for (TypedElement typedElement : typedElementOfTypeList) {
-                            InstanceContent instanceContent = new InstanceContent(typedElement.getQualifiedName());
-                            instanceContent.setAttachedName(comment.getBody());
-                            instanceValueList.add(instanceContent);
-                        }
+                        //Classifier classifier=getSameClass(instanceSpecification);
+                        TypedElement typedElement = getTypeElement(instanceSpecification);
+                        InstanceContent instanceContent = new InstanceContent(typedElement.getQualifiedName());
+                        instanceContent.setAttachedName(comment.getBody());
+                        instanceValueList.add(instanceContent);
                     }
                 }
 
@@ -285,6 +299,34 @@ public class ExportDocAction extends DefaultBrowserAction {
                 getAttacheFile(ownedElement1, instanceValueList);
             }
         }
+    }
+
+    private TypedElement getTypeElement(InstanceSpecification instanceSpecification) {
+        Classifier classifier = instanceSpecification.getClassifier().get(0);
+        Collection<TypedElement> typedElementOfTypeList = classifier.get_typedElementOfType();
+        String specificationName = instanceSpecification.getName();
+        if (StringUtils.isNotBlank(specificationName)) {
+            if (specificationName.contains(".")) {
+                specificationName = specificationName.substring(specificationName.lastIndexOf(".") + 1, specificationName.length());
+            }
+            for (TypedElement typedElement : typedElementOfTypeList) {
+                if (StringUtils.isNotBlank(specificationName)) {
+                    if (typedElement.getQualifiedName().contains(specificationName)) {
+                        return typedElement;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Classifier getSameClass(InstanceSpecification instanceSpecification) {
+        String name = instanceSpecification.getName();
+        List<Classifier> classifierList = instanceSpecification.getClassifier();
+        for (Classifier classifier : classifierList) {
+            System.out.println(classifier.getName());
+        }
+        return classifierList.get(0);
     }
 
     /**
@@ -303,23 +345,21 @@ public class ExportDocAction extends DefaultBrowserAction {
                 if (vSpecification instanceof InstanceValue) {
                     getSlotValueInfo(((InstanceValue) vSpecification).getInstance(), (InstanceValue) vSpecification, instanceValueList);
                 } else if (vSpecification instanceof LiteralSpecification) {
-                    if (instanceValue != null) {
-                        String nameString = ((InstanceValue) instanceValue).getOwningSlot().getDefiningFeature()
+                    String nameString = slot.getDefiningFeature().getQualifiedName();
+                    if (instanceValue != null && ((InstanceValue) instanceValue).getOwningSlot() != null && ((InstanceValue) instanceValue).getOwningSlot().getDefiningFeature().getHumanType().equals("Constraint Property")) {
+                        nameString = ((InstanceValue) instanceValue).getOwningSlot().getDefiningFeature()
                                 .getQualifiedName();
-                        System.out.println(nameString);
-                        if (nameString.equals("产品信息::产品信息::型号代号")) {
-                            System.out.println();
-                        }
-                        String valueString = getLiteralValue(vSpecification);
-                        if (StringUtils.isNotBlank(nameString) && StringUtils.isNotBlank(valueString)) {
-                            InstanceContent instanceContent = new InstanceContent(nameString);
-                            instanceContent.setRequireValue(valueString);
-                            instanceValueList.add(instanceContent);
-                        }
+                    }
+                    String valueString = getLiteralValue(vSpecification);
+                    if (StringUtils.isNotBlank(nameString) && StringUtils.isNotBlank(valueString)) {
+                        InstanceContent instanceContent = new InstanceContent(nameString);
+                        instanceContent.setRequireValue(valueString);
+                        instanceValueList.add(instanceContent);
                     }
                 }
             }
         }
+
     }
 
     /**
@@ -377,9 +417,7 @@ public class ExportDocAction extends DefaultBrowserAction {
                         }
                     }
                 }
-
             }
-
         }
         return value;
     }
@@ -439,6 +477,8 @@ public class ExportDocAction extends DefaultBrowserAction {
                 return ElementType.PART_PROPERTY_TYPE;
             } else if (namedElement.getHumanType().equals("Value Property")) {
                 return ElementType.VALUE_PROPERTY_TYPE;
+            } else if (namedElement.getHumanType().equals("Constraint Property")) {
+                return ElementType.CONSTRAINT_PROPERTY_TYPE;
             } else if (namedElement instanceof Port) {
                 return ElementType.PORT_TYPE;
             } else {

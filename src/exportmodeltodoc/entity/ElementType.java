@@ -13,11 +13,13 @@ public class ElementType {
     public static int PART_PROPERTY_TYPE = 4;
     /* Value property */
     public static int VALUE_PROPERTY_TYPE = 5;
+    /* Constraint property */
+    public static int CONSTRAINT_PROPERTY_TYPE = 6;
     /* Port */
-    public static int PORT_TYPE = 6;
+    public static int PORT_TYPE = 7;
     /* INSTANCE */
-    public static int INSTANCE_TYPE = 7;
+    public static int INSTANCE_TYPE = 8;
     /* Other */
-    public static int OTHER_TYPE = 8;
+    public static int OTHER_TYPE = 9;
 
 }

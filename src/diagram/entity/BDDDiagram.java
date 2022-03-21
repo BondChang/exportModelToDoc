@@ -5,9 +5,9 @@ import java.util.List;
 
 public class BDDDiagram implements Serializable {
 	private String rootName;
-	private List<String> childList;
+	private List<BDDChild> childList;
 
-	public BDDDiagram(String rootName, List<String> childList) {
+	public BDDDiagram(String rootName, List<BDDChild> childList) {
 		super();
 		this.rootName = rootName;
 		this.childList = childList;
@@ -21,12 +21,11 @@ public class BDDDiagram implements Serializable {
 		this.rootName = rootName;
 	}
 
-	public List<String> getChildList() {
+	public List<BDDChild> getChildList() {
 		return childList;
 	}
 
-	public void setChildList(List<String> childList) {
+	public void setChildList(List<BDDChild> childList) {
 		this.childList = childList;
 	}
-
 }

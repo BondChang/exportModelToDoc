@@ -308,9 +308,6 @@ public class ExportToDocService {
             }
             if (contentNodeList != null && contentNodeList.size() > 0) {
                 for (WordElement contentWord : contentNodeList) {
-                    if (contentWord.getElementName().contains("自动巡视")) {
-                        System.out.println("123");
-                    }
                     if (ExportWordUI.geneBlankContent == false) {
                         boolean isBlankContent = true;
                         isBlankContent = judgeIsBlankContent(contentWord);
@@ -529,6 +526,12 @@ public class ExportToDocService {
             wordElement.setElementRealValue(elementRealValue);
         }
         if (StringUtils.isNotBlank(elementAttachedName)) {
+            WordElement subWordElement = new WordElement();
+            subWordElement.setElementType(ElementType.VALUE_PROPERTY_TYPE);
+            subWordElement.setElementAttachedName(elementAttachedName);
+            subWordElement.setElementName(elementAttachedName);
+            subWordElement.setSelect(true);
+            wordElement.addWordElement(subWordElement);
             wordElement.setElementAttachedName(elementAttachedName);
         }
     }
@@ -545,7 +548,7 @@ public class ExportToDocService {
             return null;
         }
         for (InstanceContent instanceContent : instanceContentList) {
-            if (instanceContent.getName().equals(elementQualifiedName)) {
+            if (instanceContent.getName().equals(elementQualifiedName) && StringUtils.isNotBlank(instanceContent.getAttachedName())) {
                 return instanceContent.getAttachedName();
             }
         }
@@ -600,20 +603,60 @@ public class ExportToDocService {
     private void geneValueTable(List<WordElement> valueNodeList, Section section, int subTitleIndex) {
         Paragraph paragraph = section.addParagraph();
         paragraph.appendText("(" + subTitleIndex + ")\tValue Property");
+        /* 所有的value Property*/
+        List<WordElement> valuePropertyList = new ArrayList<>();
+        List<WordElement> constraintPropertyList = new ArrayList<>();
+        /* 区分所有的value Property和constraint Property */
+        distinguishProperty(valuePropertyList, constraintPropertyList, valueNodeList);
         /* 添加小标题 */
-        String[] header = {"序号", "名称", "值"};
-        String[][] data = new String[valueNodeList.size()][header.length];
+        String[] header = {"序号", "名称", "约束值", "实做值"};
+        String[][] data = new String[valuePropertyList.size()][header.length];
         int index = 1;
-        for (int i = 0; i < valueNodeList.size(); i++) {
+        for (int i = 0; i < valuePropertyList.size(); i++) {
             data[i][0] = String.valueOf(index++);
-            data[i][1] = valueNodeList.get(i).getElementName();
-            if (data[i][1].equals("供电接口说明")) {
-                System.out.println();
-            }
-            data[i][2] = valueNodeList.get(i).getElementRequireValue();
+            data[i][1] = valuePropertyList.get(i).getElementName();
+            data[i][2] = getConstraintDesc(valuePropertyList.get(i).getElementName(), constraintPropertyList);
+            data[i][3] = valuePropertyList.get(i).getElementRequireValue();
         }
         /* 添加表格 */
         addTable(section, header, data);
+    }
+
+    private String getConstraintDesc(String elementName, List<WordElement> constraintPropertyList) {
+        if (constraintPropertyList == null || constraintPropertyList.size() <= 0) {
+            return "";
+        } else {
+            StringBuffer sb = new StringBuffer();
+            for (int i = 0; i < constraintPropertyList.size(); i++) {
+                WordElement constraintElement = constraintPropertyList.get(i);
+                if (constraintElement.getElementName().contains(elementName)) {
+                    if (StringUtils.isNotBlank(constraintElement.getElementRequireValue())) {
+                        sb.append(constraintElement.getElementRequireValue());
+//                        if (i != constraintPropertyList.size() - 1) {
+//                            sb.append("\n");
+//                        }
+                    }
+                }
+            }
+            return sb.toString();
+        }
+    }
+
+    /**
+     * 区分所有的value Property和constraint Property
+     *
+     * @param valuePropertyList
+     * @param constraintPropertyList
+     * @param valueNodeList
+     */
+    private void distinguishProperty(List<WordElement> valuePropertyList, List<WordElement> constraintPropertyList, List<WordElement> valueNodeList) {
+        for (WordElement wordElement : valueNodeList) {
+            if (wordElement.getElementType() == ElementType.VALUE_PROPERTY_TYPE) {
+                valuePropertyList.add(wordElement);
+            } else {
+                constraintPropertyList.add(wordElement);
+            }
+        }
     }
 
     /**
@@ -666,7 +709,7 @@ public class ExportToDocService {
                     }
                 } else if (elementType == ElementType.PORT_TYPE) {
                     portNodeList.add(wordElement);
-                } else if (elementType == ElementType.VALUE_PROPERTY_TYPE) {
+                } else if (elementType == ElementType.VALUE_PROPERTY_TYPE || elementType == ElementType.CONSTRAINT_PROPERTY_TYPE) {
                     valueNodeList.add(wordElement);
                 } else if (elementType == ElementType.DIAGRAM_TYPE) {
                     diagramNodeList.add(wordElement);
@@ -678,7 +721,7 @@ public class ExportToDocService {
     private void geneDiagramImage(List<WordElement> diagramWordList, Section section, String filePathName, int subTitleIndex) {
         for (WordElement diagramElement : diagramWordList) {
             if (diagramElement.getDiagramInfoList() != null && diagramElement.getDiagramInfoList().size() > 0) {
-                addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section,diagramElement);
+                addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section, diagramElement);
             }
 //            if (diagramElement.getWordElementList() != null && diagramElement.getWordElementList().size() > 0) {
 //                for (WordElement wordElement : diagramWordList) {
@@ -694,7 +737,8 @@ public class ExportToDocService {
 
     /**
      * 添加九大图的信息
-     *  @param diagramInfoList
+     *
+     * @param diagramInfoList
      * @param subTitleIndex
      * @param filePathName
      * @param section
@@ -963,10 +1007,15 @@ public class ExportToDocService {
             if (diagramType == DiagramType.BDD) {
                 if (contentDiagramInfo.getBddDiagram() != null) {
                     BDDDiagram bddDiagram = contentDiagramInfo.getBddDiagram();
-                    List<String> childList = bddDiagram.getChildList();
-                    for (String bddCompose : childList) {
+                    List<BDDChild> childList = bddDiagram.getChildList();
+                    for (BDDChild bddCompose : childList) {
                         Paragraph bddComposeParagraph = section.addParagraph();
-                        bddComposeParagraph.appendText(bddCompose);
+                        bddComposeParagraph.appendText(bddCompose.getName());
+                        bddComposeParagraph.appendText(bddCompose.getType());
+                        if (StringUtils.isNotBlank(bddCompose.getChildName())) {
+                            bddComposeParagraph.appendText(("(E)"));
+                            bddComposeParagraph.appendText("(" + bddCompose.getChildName() + ")");
+                        }
                         bddComposeParagraph.getListFormat().applyBulletStyle();
                         bddComposeParagraph.getListFormat().getCurrentListLevel().setNumberPosition(-10);
                     }
