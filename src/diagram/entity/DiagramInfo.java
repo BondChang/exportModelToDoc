@@ -14,10 +14,11 @@ public class DiagramInfo implements Serializable {
     private List<DiagramInfo> subDiagramList;
     private Object diagramEntity;
     private List<ReqDiagram> reqDiagram;
-    private BDDDiagram bddDiagram;
+    private BaseDiagram bddDiagram;
     private List<ParaDiagram> paraDiagramList;
     private StateFlow stateFlow;
     private List<Lane> activityLaneList;
+    private SequenceDiagram sequenceDiagram;
 
     public DiagramInfo() {
         this.diagramComposeList = new ArrayList<String>();
@@ -82,11 +83,11 @@ public class DiagramInfo implements Serializable {
         this.wide = wide;
     }
 
-    public BDDDiagram getBddDiagram() {
+    public BaseDiagram getBddDiagram() {
         return bddDiagram;
     }
 
-    public void setBddDiagram(BDDDiagram bddDiagram) {
+    public void setBddDiagram(BaseDiagram bddDiagram) {
         this.bddDiagram = bddDiagram;
     }
 
@@ -112,5 +113,13 @@ public class DiagramInfo implements Serializable {
 
     public void setActivityLaneList(List<Lane> activityLaneList) {
         this.activityLaneList = activityLaneList;
+    }
+
+    public SequenceDiagram getSequenceDiagram() {
+        return sequenceDiagram;
+    }
+
+    public void setSequenceDiagram(SequenceDiagram sequenceDiagram) {
+        this.sequenceDiagram = sequenceDiagram;
     }
 }

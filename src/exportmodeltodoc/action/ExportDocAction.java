@@ -28,7 +28,7 @@ import static exportmodeltodoc.action.ExportDocUtil.wipeNum;
 public class ExportDocAction extends DefaultBrowserAction {
 
     public ExportDocAction() {
-        super("", "å¯¼å‡ºwordæ–‡æ¡£", null, null);
+        super("", "µ¼³öwordÎÄµµ", null, null);
     }
 
     public static List<List<InstanceContent>> instanceListList = new ArrayList<>();
@@ -47,51 +47,51 @@ public class ExportDocAction extends DefaultBrowserAction {
         Object userObject = nodeSelect.getUserObject();
         SessionManager.getInstance().createSession(project, "Export");
 
-        /* åœ¨æ ¹èŠ‚ç‚¹ä¸Šå³é”®ï¼Œå³åœ¨modelä¸Šå³é”® */
+        /* ÔÚ¸ù½ÚµãÉÏÓÒ¼ü£¬¼´ÔÚmodelÉÏÓÒ¼ü */
         if (userObject instanceof com.nomagic.uml2.ext.magicdraw.auxiliaryconstructs.mdmodels.Model) {
             com.nomagic.uml2.ext.magicdraw.auxiliaryconstructs.mdmodels.Model model = (Model) userObject;
             WordElement rootElement = createRootElement(model);
-            /* è·å–æ¨¡å‹ä¸‹æ‰€æœ‰çš„å­èŠ‚ç‚¹ */
+            /* »ñÈ¡Ä£ĞÍÏÂËùÓĞµÄ×Ó½Úµã */
             Collection<NamedElement> ownedMemberList = model.getOwnedMember();
-            /* æ·»åŠ å­èŠ‚ç‚¹çš„å­©å­ä¿¡æ¯ */
+            /* Ìí¼Ó×Ó½ÚµãµÄº¢×ÓĞÅÏ¢ */
             addRootChildInfo(rootElement, ownedMemberList);
             SelectTree selectTree = new SelectTree(rootElement);
         }
-//        /* åœ¨åŒ…ä¸Šè¿›è¡Œå³é”® */
+//        /* ÔÚ°üÉÏ½øĞĞÓÒ¼ü */
 //        else if (userObject instanceof Package) {
 //            Package packageContent = (Package) userObject;
 //            WordElement rootElement = createRootElement(packageContent);
 //            addNodeInfo(packageContent, rootElement);
 //            SelectTree selectTree = new SelectTree(rootElement);
 //        }
-//        /* åœ¨blockä¸Šè¿›è¡Œå³é”® */
+//        /* ÔÚblockÉÏ½øĞĞÓÒ¼ü */
 //        else if (userObject instanceof Class) {
 //            Class ownClass = (Class) userObject;
 //            WordElement rootElement = createRootElement(ownClass);
 //            addNodeInfo(ownClass, rootElement);
 //            SelectTree selectTree = new SelectTree(rootElement);
 //        }
-//        /* åœ¨å›¾ä¸Šå³é”® */
+//        /* ÔÚÍ¼ÉÏÓÒ¼ü */
 //        else if (userObject instanceof Diagram) {
 //            com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Diagram diagram = (com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Diagram) userObject;
 //            WordElement rootElement = createRootElement(diagram);
 //            addNodeInfo(diagram, rootElement);
 //            SelectTree selectTree = new SelectTree(rootElement);
 //        }
-        /* åœ¨å®ä¾‹ä¸Šè¿›è¡Œå³é”® */
+        /* ÔÚÊµÀıÉÏ½øĞĞÓÒ¼ü */
         else if (userObject instanceof InstanceSpecification) {
             InstanceSpecification instanceSpecification = (InstanceSpecification) userObject;
-            /* è·å–å®ä¾‹çš„çœŸå®å®ä½“ï¼Œç”¨äºåç»­å®ä¾‹è¡¨æ ¼çš„ç”Ÿæˆ */
+            /* »ñÈ¡ÊµÀıµÄÕæÊµÊµÌå£¬ÓÃÓÚºóĞøÊµÀı±í¸ñµÄÉú³É */
             TypedElement typedElement = getTypeElement(instanceSpecification);
 
             Classifier classifier = instanceSpecification.getClassifier().get(0);
-            /* ç”Ÿæˆè¡¨æ ¼çš„éª¨æ¶ */
+            /* Éú³É±í¸ñµÄ¹Ç¼Ü */
             if (classifier instanceof Class) {
                 WordElement rootElement = createRootElement(classifier);
                 rootElement.setHasInstance(true);
                 rootElement.setQualifiedName(typedElement.getQualifiedName());
                 addNodeInfo(classifier, rootElement);
-                /* å­˜å‚¨å®ä¾‹çš„å€¼ */
+                /* ´æ´¢ÊµÀıµÄÖµ */
                 saveInstanceValue(instanceSpecification);
                 SelectTree selectTree = new SelectTree(rootElement);
             }
@@ -119,7 +119,7 @@ public class ExportDocAction extends DefaultBrowserAction {
             }
             SelectTree selectTree = new SelectTree(rootElement);
         }
-        /* å¯ä»¥ç†è§£æˆåœ¨å…ƒç´ ä¸Šå³é”® */
+        /* ¿ÉÒÔÀí½â³ÉÔÚÔªËØÉÏÓÒ¼ü */
 //        else if (userObject instanceof NamedElement) {
 //            WordElement rootElement = createRootElement((NamedElement) userObject);
 //            if (((NamedElement) userObject).getHumanType().equals("Part Property")) {
@@ -136,7 +136,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * æ·»åŠ å­èŠ‚ç‚¹çš„å­©å­ä¿¡æ¯
+     * Ìí¼Ó×Ó½ÚµãµÄº¢×ÓĞÅÏ¢
      *
      * @param rootElement
      * @param ownedMemberList
@@ -165,7 +165,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * æ·»åŠ èŠ‚ç‚¹ä¿¡æ¯
+     * Ìí¼Ó½ÚµãĞÅÏ¢
      *
      * @param ownedMember
      * @param packWordElement
@@ -174,7 +174,7 @@ public class ExportDocAction extends DefaultBrowserAction {
         if (ownedMember instanceof Activity || ownedMember instanceof Diagram) {
             ParserModelInfo.parserModelInfo(ownedMember, packWordElement);
         } else {
-            /* åˆ›å»ºå­åŒ… */
+            /* ´´½¨×Ó°ü */
             if (ownedMember instanceof Package) {
                 Package pak = (Package) ownedMember;
                 Collection<NamedElement> subMemberList = pak.getMember();
@@ -202,7 +202,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * æ·»åŠ å…ƒç´ ä¿¡æ¯
+     * Ìí¼ÓÔªËØĞÅÏ¢
      *
      * @param subMemberList
      * @param packWordElement
@@ -213,7 +213,7 @@ public class ExportDocAction extends DefaultBrowserAction {
         for (NamedElement subMember : subMemberList) {
             WordElement subWordElement = new WordElement();
             String parentId = subMember.getObjectParent().getID();
-            /* åˆ¤æ–­æ˜¯å¦æ˜¯æœ¬å±‚çº§çš„èŠ‚ç‚¹ */
+            /* ÅĞ¶ÏÊÇ·ñÊÇ±¾²ã¼¶µÄ½Úµã */
             if (!ownedMember.getID().equals(parentId)) {
                 return;
             }
@@ -227,7 +227,7 @@ public class ExportDocAction extends DefaultBrowserAction {
                         if (subMemberClass != null) {
                             if (Objects.equals(subMemberClass.getObjectParent().getHumanName(),
                                     ownedMember.getHumanName())) {
-                                /* å­˜å‚¨å®ä¾‹åŒ–çš„å€¼ */
+                                /* ´æ´¢ÊµÀı»¯µÄÖµ */
                                 saveInstanceValue((InstanceSpecification) subMember);
                             }
                         }
@@ -241,7 +241,7 @@ public class ExportDocAction extends DefaultBrowserAction {
                     subWordElement.setWide(packWordElement.getWide() + 1);
                     subWordElement.setQualifiedName(subMember.getQualifiedName());
                     subWordElement.setElementType(addElementType(subMember));
-                    /* å¤„ç†Propertyä¿¡æ¯ */
+                    /* ´¦ÀíPropertyĞÅÏ¢ */
                     if (subMember instanceof Property) {
                         if ((subMember).getHumanType().equals("Part Property")) {
                             Type ownType = ((Property) subMember).getType();
@@ -276,7 +276,7 @@ public class ExportDocAction extends DefaultBrowserAction {
             if (ownedElement instanceof Comment) {
                 Comment comment = (Comment) ownedElement;
                 String humanName = comment.getHumanName();
-                /* è¯´æ˜æ˜¯é™„ä»¶ */
+                /* ËµÃ÷ÊÇ¸½¼ş */
                 if (humanName.equals("Attached File")) {
                     Element owner = comment.getOwner();
                     if (owner instanceof InstanceSpecification) {
@@ -330,7 +330,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * è·å–instanceçš„å­èŠ‚ç‚¹ä¿¡æ¯
+     * »ñÈ¡instanceµÄ×Ó½ÚµãĞÅÏ¢
      *
      * @param iSpecification
      * @param instanceValueList
@@ -363,7 +363,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * è·å–propçš„å€¼
+     * »ñÈ¡propµÄÖµ
      *
      * @param va
      * @return
@@ -395,7 +395,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * è·å–å•ä½
+     * »ñÈ¡µ¥Î»
      *
      * @param owner
      * @return
@@ -423,7 +423,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * å¦‚æœæ˜¯åŒ…æˆ–è€…é¡¶å±‚æ¨¡å‹èŠ‚ç‚¹ï¼Œå»é™¤åç§°ä¸­çš„å°æ•°ç‚¹ä¸æ•°å­—
+     * Èç¹ûÊÇ°ü»òÕß¶¥²ãÄ£ĞÍ½Úµã£¬È¥³ıÃû³ÆÖĞµÄĞ¡ÊıµãÓëÊı×Ö
      *
      * @param wordElement
      * @param namedElement
@@ -438,7 +438,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * ç”Ÿæˆé¡¶å±‚èŠ‚ç‚¹ï¼Œç”¨äºç”Ÿæˆæ–‡æ¡£çš„æ ‡é¢˜
+     * Éú³É¶¥²ã½Úµã£¬ÓÃÓÚÉú³ÉÎÄµµµÄ±êÌâ
      *
      * @param namedElement
      * @return
@@ -447,7 +447,7 @@ public class ExportDocAction extends DefaultBrowserAction {
         String nameStr = namedElement.getName();
         if (StringUtils.isNotBlank(nameStr)) {
             WordElement rootElement = new WordElement();
-            /* å¦‚æœæ˜¯åŒ…æˆ–è€…é¡¶å±‚æ¨¡å‹èŠ‚ç‚¹ï¼Œå»é™¤åç§°ä¸­çš„å°æ•°ç‚¹ä¸æ•°å­— */
+            /* Èç¹ûÊÇ°ü»òÕß¶¥²ãÄ£ĞÍ½Úµã£¬È¥³ıÃû³ÆÖĞµÄĞ¡ÊıµãÓëÊı×Ö */
             addElementName(rootElement, namedElement, nameStr);
             rootElement.setWide(0);
             rootElement.setElementType(addElementType(namedElement));
@@ -457,7 +457,7 @@ public class ExportDocAction extends DefaultBrowserAction {
     }
 
     /**
-     * æ·»åŠ å…ƒç´ çš„ç±»å‹
+     * Ìí¼ÓÔªËØµÄÀàĞÍ
      *
      * @param namedElement
      * @return

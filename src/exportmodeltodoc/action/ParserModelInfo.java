@@ -17,6 +17,8 @@ import com.nomagic.uml2.ext.magicdraw.commonbehaviors.mdbasicbehaviors.Behavior;
 import com.nomagic.uml2.ext.magicdraw.compositestructures.mdcollaborations.Collaboration;
 import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Interaction;
 import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Lifeline;
+import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.Message;
+import com.nomagic.uml2.ext.magicdraw.interactions.mdbasicinteractions.MessageOccurrenceSpecification;
 import com.nomagic.uml2.ext.magicdraw.statemachines.mdbehaviorstatemachines.*;
 import diagram.entity.*;
 import exportmodeltodoc.entity.Branch;
@@ -170,7 +172,7 @@ public class ParserModelInfo {
         /* 时序图 */
         else if (diagramType.contains(SEQUENCE_DIAGRAM)) {
             setDiagramBasicInfo(diagram, diagramInfo, diagramType);
-            // parserSequenceInfo(diagram, diagramInfo);
+            parserSequenceInfo(diagram, diagramInfo);
         }
         /* 包图 */
         else if (diagramType.contains(PACKAGE_DIAGRAM)) {
@@ -179,6 +181,7 @@ public class ParserModelInfo {
         /* ibd图 */
         else if (diagramType.contains(IBD_DIAGRAM)) {
             setDiagramBasicInfo(diagram, diagramInfo, diagramType);
+            parserIBDInfo(diagram, diagramInfo);
         }
         /* bdd图 */
         else if (diagramType.contains(BDD_DIAGRAM)) {
@@ -197,9 +200,82 @@ public class ParserModelInfo {
             setDiagramBasicInfo(diagram, diagramInfo, diagramType);
             parserParaInfo(diagram, diagramInfo);
         } else {
+            //TODO
             System.out.println(diagramType + "------------------------------------------");
         }
 
+    }
+
+    private static void parserIBDInfo(Diagram diagram, DiagramInfo diagramInfo) {
+        Namespace namespace = diagram.getNamespace();
+        if (namespace instanceof Class) {
+            Class ibdClass = (Class) namespace;
+            addIBDInfo(ibdClass, diagramInfo);
+        }
+    }
+
+    /**
+     * 添加ibd的图的信息
+     *
+     * @param ibdClass
+     * @param diagramInfo
+     */
+    private static void addIBDInfo(Class ibdClass, DiagramInfo diagramInfo) {
+        Collection<NamedElement> memberList = ibdClass.getMember();
+        List<BaseChild> filterSubMemberList = filterIBDMember(memberList);
+        if (filterSubMemberList != null && filterSubMemberList.size() > 0) {
+            IBDDiagram bddDiagram = new IBDDiagram(wipeNum(ibdClass.getName()), filterSubMemberList);
+            diagramInfo.setBddDiagram(bddDiagram);
+        }
+    }
+
+    /**
+     * 过滤ibd图的元素
+     *
+     * @param memberList
+     * @return
+     */
+    private static List<BaseChild> filterIBDMember(Collection<NamedElement> memberList) {
+        List<BaseChild> propList = new ArrayList<BaseChild>();
+        for (NamedElement subElement : memberList) {
+            if (subElement instanceof Property) {
+                Property idbProperty = (Property) subElement;
+                if (idbProperty.getHumanType().equals("Part Property")) {
+                    String childDiagramName = getIBDChildDiagram(idbProperty);
+                    BaseChild bddChild = new BaseChild(idbProperty.getName(), childDiagramName);
+                    bddChild.setType(setStateType(subElement));
+                    propList.add(bddChild);
+                }
+            }
+        }
+        return propList;
+    }
+
+    private static String getIBDChildDiagram(Property ibdProperty) {
+        Type ibdPropertyType = ibdProperty.getType();
+        if (ibdPropertyType instanceof Class) {
+            Class ibdClass = (Class) ibdPropertyType;
+            Collection<NamedElement> memberList = ibdClass.getMember();
+            for (NamedElement element : memberList) {
+                if (element instanceof Diagram) {
+                    return ((Diagram) element).getName();
+                }
+            }
+        }
+//        System.out.println();
+//        Collection<Element> ownedElementList = ibdProperty.getOwnedElement();
+//        for (Element element : ownedElementList) {
+//            if (element instanceof Diagram) {
+//                return ((Diagram) element).getName();
+//            } else if (element instanceof InstanceSpecification) {
+//                InstanceSpecification instanceSpecification= (InstanceSpecification) element;
+//                List<Classifier> classifier1 = instanceSpecification.getClassifier();
+//                Classifier classifier = instanceSpecification.getClassifier().get(0);
+//                Collection<TypedElement> typedElementOfTypeList = classifier.get_typedElementOfType();
+//                System.out.println();
+//            }
+//        }
+        return "";
     }
 
     /**
@@ -387,12 +463,12 @@ public class ParserModelInfo {
         if (namespace instanceof Package) {
             Package bddPackage = (Package) namespace;
             Collection<PackageableElement> packagedElement = bddPackage.getPackagedElement();
-            List<BDDChild> bddClassList = new ArrayList<>();
+            List<BaseChild> bddClassList = new ArrayList<>();
             for (PackageableElement ele : packagedElement) {
                 if (ele instanceof Class) {
                     Class bddClass = (Class) ele;
                     String childDiagramName = getChildDiagram(bddClass);
-                    BDDChild bddChild = new BDDChild(bddClass.getName(), childDiagramName);
+                    BaseChild bddChild = new BaseChild(bddClass.getName(), childDiagramName);
                     bddChild.setType(setStateType(bddClass));
                     bddClassList.add(bddChild);
                 }
@@ -411,7 +487,7 @@ public class ParserModelInfo {
     private static void addBDDInfo(Class bddClass, DiagramInfo diagramInfo) {
         Collection<NamedElement> memberList = bddClass.getMember();
         /* 筛选子元素，只留下Part property */
-        List<BDDChild> filterSubMemberList = filterSubMember(memberList);
+        List<BaseChild> filterSubMemberList = filterSubMember(memberList);
         if (filterSubMemberList != null && filterSubMemberList.size() > 0) {
             BDDDiagram bddDiagram = new BDDDiagram(bddClass.getName(), filterSubMemberList);
             diagramInfo.setBddDiagram(bddDiagram);
@@ -419,15 +495,14 @@ public class ParserModelInfo {
 
     }
 
-    private static List<BDDChild> filterSubMember(Collection<NamedElement> memberList) {
-        List<BDDChild> propList = new ArrayList<BDDChild>();
+    private static List<BaseChild> filterSubMember(Collection<NamedElement> memberList) {
+        List<BaseChild> propList = new ArrayList<BaseChild>();
         if (memberList != null && memberList.size() > 0) {
             for (NamedElement subElement : memberList) {
                 if (subElement instanceof Class) {
                     Class bddClass = (Class) subElement;
-                    System.out.println(bddClass.getName());
                     String childDiagramName = getChildDiagram(bddClass);
-                    BDDChild bddChild = new BDDChild(subElement.getName(), childDiagramName);
+                    BaseChild bddChild = new BaseChild(subElement.getName(), childDiagramName);
                     bddChild.setType(setStateType(subElement));
                     propList.add(bddChild);
                 }
@@ -499,24 +574,112 @@ public class ParserModelInfo {
      */
     private static void parserSequenceInfo(Diagram diagram, DiagramInfo diagramInfo) {
         Collection<Namespace> ownedElementList = diagram.get_namespaceOfMember();
+        List<String> lifeList = new ArrayList<>();
+        List<String> messageList = new ArrayList<>();
         //System.out.println(diagram.getName());
         for (Namespace ownedElement : ownedElementList) {
             if (ownedElement instanceof Interaction) {
                 Interaction interaction = (Interaction) ownedElement;
                 Collection<NamedElement> iNamedElementList = interaction.getMember();
+                Collection<Message> message1List = interaction.getMessage();
+                for (Message message : message1List) {
+                    System.out.println(message.getName());
+                }
                 for (NamedElement namedElement : iNamedElementList) {
                     if (namedElement instanceof Lifeline) {
-                        // TODO
                         Lifeline lifeline = (Lifeline) namedElement;
-                        System.out.println(lifeline.getRepresents().getQualifiedName());
-                        System.out.println("123");
+                        lifeList.add(lifeline.getRepresents().getName());
+                    } else if (namedElement instanceof Message) {
+//                        Message message = (Message) namedElement;
+//                        Constraint guard = message.getGuard();
+//                        String messageName = namedElement.getName();
+//                        if (guard != null) {
+//                            ValueSpecification specification = guard.getSpecification();
+//                            if (specification != null) {
+//                                if (specification != null && specification instanceof OpaqueExpression) {
+//                                    OpaqueExpression opaqueExpression = (OpaqueExpression) specification;
+//                                    List<String> bodyList = opaqueExpression.getBody();
+//                                    if (bodyList != null && bodyList.size() > 0) {
+//                                        for (String bodyStr : bodyList) {
+//                                            if (StringUtils.isNotBlank(bodyStr)) {
+//                                                messageName = bodyStr + " " + messageName;
+//                                            }
+//                                            messageList.add(messageName);
+//                                        }
+//
+//                                    }
+//                                }
+//                            }
+//                        } else {
+//                            if (StringUtils.isNotBlank(messageName)) {
+//                                messageList.add(messageName);
+//                            }
+//                        }
+                        //String guardName = Optional.ofNullable(message).map(m -> m.getGuard()).map(m -> m.getBodyContext()).map(m -> m.getName()).orElse("")
+                    } else if (namedElement instanceof MessageOccurrenceSpecification) {
+                        Message message = ((MessageOccurrenceSpecification) namedElement).getMessage();
+                        if (message != null) {
+                            addSequenceMessage(message, messageList);
+                        }
                     }
                 }
             }
 
         }
-        //System.out.println();
+        SequenceDiagram sequenceDiagram = new SequenceDiagram();
+        sequenceDiagram.setLifeLineList(lifeList);
+        sequenceDiagram.setMessageList(messageList);
+        diagramInfo.setSequenceDiagram(sequenceDiagram);
+    }
 
+    /**
+     * 添加时序图的消息信息
+     *
+     * @param message
+     * @param messageList
+     */
+    private static void addSequenceMessage(Message message, List<String> messageList) {
+        Constraint guard = message.getGuard();
+        //Collection<InformationFlow> informationFlowOfInformationSource = message.get_informationFlowOfInformationSource();
+        //Collection<Namespace> namespaceOfMemberList = message.get_namespaceOfMember();
+//        for(Namespace namespace:namespaceOfMemberList){
+//            if(namespace instanceof Interaction){
+//                Interaction interaction = (Interaction) namespace;
+//                Collection<NamedElement> iNamedElementList = interaction.getMember();
+//                for (NamedElement namedElement : iNamedElementList) {
+//                    if (namedElement instanceof Lifeline) {
+//                        Lifeline lifeline = (Lifeline) namedElement;
+//                        System.out.println(lifeline.getRepresents().getName()+"88888888888888888888888");
+//                    }
+//                }
+//                        //lifeList.add(lifeline.getRepresents().getName());
+//            }
+//        }
+        String messageName = message.getName();
+        if (guard != null) {
+            ValueSpecification specification = guard.getSpecification();
+            if (specification != null) {
+                if (specification != null && specification instanceof OpaqueExpression) {
+                    OpaqueExpression opaqueExpression = (OpaqueExpression) specification;
+                    List<String> bodyList = opaqueExpression.getBody();
+                    if (bodyList != null && bodyList.size() > 0) {
+                        for (String bodyStr : bodyList) {
+                            if (StringUtils.isNotBlank(bodyStr)) {
+                                messageName = bodyStr + " " + messageName;
+                            }
+                            if (StringUtils.isNotBlank(messageName) && (!messageList.contains(messageName))) {
+                                messageList.add(messageName);
+                            }
+                        }
+
+                    }
+                }
+            }
+        } else {
+            if (StringUtils.isNotBlank(messageName) && (!messageList.contains(messageName))) {
+                messageList.add(messageName);
+            }
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.Objects;
 
 public class ExportToDocService {
     private static String deleteFileName = null;
+    private static int subTitleIndex = 0;
 
     /**
      * 导出word文档的入口
@@ -286,7 +287,7 @@ public class ExportToDocService {
         /* 添加所有的附件信息 */
         List<WordElement> attachedFileList = new ArrayList<>();
         /* 小标题的序号 */
-        int subTitleIndex = 0;
+        subTitleIndex = 0;
         //geneDiagramImage(rootElement, section, filePathName);
         if (wordElementList != null && wordElementList.size() > 0) {
             distinguishNode(contentNodeList, instancePackageNodeList, portNodeList, valueNodeList, diagramNodeList, attachedFileList, wordElementList);
@@ -302,6 +303,7 @@ public class ExportToDocService {
             }
             if (diagramNodeList != null && diagramNodeList.size() > 0) {
                 geneDiagramImage(diagramNodeList, section, filePathName, subTitleIndex);
+                subTitleIndex++;
             }
             if (attachedFileList != null && attachedFileList.size() > 0) {
                 geneAttachedFile(attachedFileList, section, filePathName, subTitleIndex, document);
@@ -722,6 +724,7 @@ public class ExportToDocService {
         for (WordElement diagramElement : diagramWordList) {
             if (diagramElement.getDiagramInfoList() != null && diagramElement.getDiagramInfoList().size() > 0) {
                 addDiagramImage(diagramElement.getDiagramInfoList(), subTitleIndex, filePathName, section, diagramElement);
+                subTitleIndex++;
             }
 //            if (diagramElement.getWordElementList() != null && diagramElement.getWordElementList().size() > 0) {
 //                for (WordElement wordElement : diagramWordList) {
@@ -976,11 +979,13 @@ public class ExportToDocService {
             contInfoStr = "下图描述" + diagramName + "模块的一系列状态，以及响应事件时，状态之间的可能转换。";
         } else if (diagramType == DiagramType.PACKAGE_DIAGRAM) {
             contInfoStr = "下图详细描述" + diagramName + "的组成部分以及组成部分之前的关联关系。";
-        } else if (diagramType == DiagramType.IBD) {
-            contInfoStr = "下图详细显示了" + diagramName + "模块的内部结构及其组成部分之间的连接关系。";
-        } else if (diagramType == DiagramType.BDD) {
+        }
+        //else if (diagramType == DiagramType.IBD) {
+        //  contInfoStr = "下图详细显示了" + diagramName + "模块的内部结构及其组成部分之间的连接关系。";
+        // }
+        else if (diagramType == DiagramType.BDD || diagramType == DiagramType.IBD) {
             if (contentDiagramInfo.getBddDiagram() != null) {
-                BDDDiagram bddDiagram = contentDiagramInfo.getBddDiagram();
+                BaseDiagram bddDiagram = contentDiagramInfo.getBddDiagram();
                 contInfoStr = bddDiagram.getRootName() + "系统由" + bddDiagram.getChildList().size() + "个模块组成，分别为:";
             }
 
@@ -1001,14 +1006,13 @@ public class ExportToDocService {
         if (!StringUtils.isBlank(contInfoStr)) {
             Paragraph commentPara = section.addParagraph();
             commentPara.appendText(contInfoStr);
-
             commentPara.getFormat().setFirstLineIndent(25f);
             commentPara.getFormat().setAfterSpacing(10f);
-            if (diagramType == DiagramType.BDD) {
+            if (diagramType == DiagramType.BDD || diagramType == DiagramType.IBD) {
                 if (contentDiagramInfo.getBddDiagram() != null) {
-                    BDDDiagram bddDiagram = contentDiagramInfo.getBddDiagram();
-                    List<BDDChild> childList = bddDiagram.getChildList();
-                    for (BDDChild bddCompose : childList) {
+                    BaseDiagram bddDiagram = contentDiagramInfo.getBddDiagram();
+                    List<BaseChild> childList = bddDiagram.getChildList();
+                    for (BaseChild bddCompose : childList) {
                         Paragraph bddComposeParagraph = section.addParagraph();
                         bddComposeParagraph.appendText(bddCompose.getName());
                         bddComposeParagraph.appendText(bddCompose.getType());
@@ -1023,6 +1027,9 @@ public class ExportToDocService {
             } else if (diagramType == DiagramType.STATE_MACHINE) {
                 StateFlow stateFlow = contentDiagramInfo.getStateFlow();
                 addStateInfo(stateFlow, section);
+            } else if (diagramType == DiagramType.SEQUENCE) {
+                SequenceDiagram sequenceDiagram = contentDiagramInfo.getSequenceDiagram();
+                addSequenceInfo(sequenceDiagram, section);
             } else if (diagramType == DiagramType.REQUIREMENT) {
                 List<ReqDiagram> reqDiagram = contentDiagramInfo.getReqDiagram();
                 if (reqDiagram != null && reqDiagram.size() > 0) {
@@ -1074,6 +1081,43 @@ public class ExportToDocService {
             }
         }
 
+    }
+
+    private void addSequenceInfo(SequenceDiagram sequenceDiagram, Section section) {
+        if (sequenceDiagram == null) {
+            return;
+        }
+        List<String> lifeLineList = sequenceDiagram.getLifeLineList();
+        List<String> messageList = sequenceDiagram.getMessageList();
+        Paragraph lifePara = section.addParagraph();
+        lifePara.appendText("下图由" + lifeLineList.size() + "个生命线构成,详细如下:");
+        for (String lifeLine : lifeLineList) {
+            Paragraph lifeLineParagraph = section.addParagraph();
+            lifeLineParagraph.appendText(lifeLine);
+            lifeLineParagraph.getListFormat().applyBulletStyle();
+            lifeLineParagraph.getListFormat().getCurrentListLevel().setNumberPosition(-10);
+        }
+        Paragraph messagePara = section.addParagraph();
+        messagePara.appendText("\n");
+        messagePara.appendText("下图传递了" + messageList.size() + "个消息，详细如下:");
+        for (String message : messageList) {
+            Paragraph messageParagraph = section.addParagraph();
+            messageParagraph.appendText(message);
+            messageParagraph.getListFormat().applyBulletStyle();
+            messageParagraph.getListFormat().getCurrentListLevel().setNumberPosition(-10);
+        }
+        section.addParagraph().appendText("\n");
+//        for (BaseChild bddCompose : sequenceDiagram) {
+//            Paragraph bddComposeParagraph = section.addParagraph();
+//            bddComposeParagraph.appendText(bddCompose.getName());
+//            bddComposeParagraph.appendText(bddCompose.getType());
+//            if (StringUtils.isNotBlank(bddCompose.getChildName())) {
+//                bddComposeParagraph.appendText(("(E)"));
+//                bddComposeParagraph.appendText("(" + bddCompose.getChildName() + ")");
+//            }
+//            bddComposeParagraph.getListFormat().applyBulletStyle();
+//            bddComposeParagraph.getListFormat().getCurrentListLevel().setNumberPosition(-10);
+//        }
     }
 
     /**

@@ -1,11 +1,11 @@
 package diagram.entity;
 
-public class BDDChild {
+public class BaseChild {
     private String name;
     private String childName;
     private String type;
 
-    public BDDChild(String name, String childName) {
+    public BaseChild(String name, String childName) {
         this.name = name;
         this.childName = childName;
     }
